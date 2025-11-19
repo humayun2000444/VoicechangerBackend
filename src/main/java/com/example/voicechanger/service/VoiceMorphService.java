@@ -1,52 +1,30 @@
 package com.example.voicechanger.service;
 
+import com.example.voicechanger.service.esl.CallHandlerService;
 import com.example.voicechanger.service.esl.CallTransferService;
-import com.example.voicechanger.service.esl.EslService;
 import org.springframework.stereotype.Service;
 
 @Service
 public class VoiceMorphService {
     private final CallTransferService callTransferService;
-    private final EslService eslService;
+    private final CallHandlerService callHandlerService;
 
-    public VoiceMorphService(CallTransferService callTransferService, EslService eslService) {
+    public VoiceMorphService(CallTransferService callTransferService, CallHandlerService callHandlerService) {
         this.callTransferService = callTransferService;
-        this.eslService = eslService;
+        this.callHandlerService = callHandlerService;
     }
 
 
     public String setVoiceByEmail(String email, String code) {
         try {
-            // Get channels in CSV format
-            String channelsOutput = eslService.sendCommand("show channels as csv");
-            if (channelsOutput == null || channelsOutput.isEmpty()) {
-                return "No active channels found.";
+            // Find B-Leg UUID from active bridges using event headers
+            String bLegUuid = callHandlerService.findBLegUuidByEmail(email);
+
+            if (bLegUuid == null) {
+                return "No active call found for email: " + email;
             }
 
-            // Parse CSV
-            String[] lines = channelsOutput.split("\n");
-            for (int i = 1; i < lines.length; i++) { // skip header
-                String line = lines[i].trim();
-                if (line.isEmpty()) continue;
-
-                String[] cols = line.split(",", -1); // keep empty fields
-                if (cols.length < 37) continue;
-
-                String initialContext = cols[37]; // col 39 (0-based index 38)
-                String cidName = cols[6];         // col 7  (0-based index 6)
-                String bLegUuid = cols[0];        // col 1  (0-based index 0)
-
-                if ("Voice".equalsIgnoreCase(initialContext) && cidName != null && !cidName.isEmpty()) {
-                    String[] parts = cidName.split("_");
-                    if (parts.length >= 3) {
-                        String extractedEmail = parts[2]; // third part = email
-                        if (extractedEmail.equalsIgnoreCase(email)) {
-                            return executeVoiceCommand(bLegUuid, code);
-                        }
-                    }
-                }
-            }
-            return "No active call found for email: " + email;
+            return executeVoiceCommand(bLegUuid, code);
         } catch (Exception e) {
             e.printStackTrace();
             return "Error: " + e.getMessage();
