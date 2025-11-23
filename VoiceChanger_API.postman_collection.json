@@ -28,7 +28,7 @@
 					]
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/voiceTest?code=901",
+					"raw": "http://98.70.40.108/api/api/voiceTest?code=901",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -72,7 +72,7 @@
 					]
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/voiceTest?code=902",
+					"raw": "http://98.70.40.108/api/api/voiceTest?code=902",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -116,7 +116,7 @@
 					]
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/voiceTest?code=903",
+					"raw": "http://98.70.40.108/api/api/voiceTest?code=903",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -172,7 +172,7 @@
 					]
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/process?shift=10.0&formant=2.0&base=100.0",
+					"raw": "http://98.70.40.108/api/api/process?shift=10.0&formant=2.0&base=100.0",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -205,7 +205,7 @@
 	"variable": [
 		{
 			"key": "base_url",
-			"value": "http://localhost:8080",
+			"value": "http://98.70.40.108/api",
 			"type": "string"
 		}
 	]
