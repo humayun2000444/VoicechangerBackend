@@ -3,7 +3,7 @@
 ## Overview
 The Voice Changer API provides endpoints for real-time voice transformation with preset and custom parameters.
 
-**Base URL:** `http://localhost:8080/api`
+**Base URL:** `http://98.70.40.108/api/api`
 
 ---
 
@@ -37,7 +37,7 @@ Transform audio files using preset voice transformation codes. This endpoint sim
 
 **cURL:**
 ```bash
-curl -X POST "http://localhost:8080/api/voiceTest?code=901" \
+curl -X POST "http://98.70.40.108/api/api/voiceTest?code=901" \
   -F "audio=@/path/to/audio.wav" \
   --output processed_audio.wav
 ```
@@ -47,7 +47,7 @@ curl -X POST "http://localhost:8080/api/voiceTest?code=901" \
 const formData = new FormData();
 formData.append('audio', audioFile);
 
-fetch('http://localhost:8080/api/voiceTest?code=901', {
+fetch('http://98.70.40.108/api/api/voiceTest?code=901', {
   method: 'POST',
   body: formData
 })
@@ -66,7 +66,7 @@ fetch('http://localhost:8080/api/voiceTest?code=901', {
 ```python
 import requests
 
-url = "http://localhost:8080/api/voiceTest"
+url = "http://98.70.40.108/api/api/voiceTest"
 files = {'audio': open('audio.wav', 'rb')}
 params = {'code': 901}
 
@@ -95,21 +95,21 @@ if response.status_code == 200:
 
 ##### Male to Female (Code 901)
 ```bash
-curl -X POST "http://localhost:8080/api/voiceTest?code=901" \
+curl -X POST "http://98.70.40.108/api/api/voiceTest?code=901" \
   -F "audio=@male_voice.wav" \
   --output female_voice.wav
 ```
 
 ##### Female to Male (Code 902)
 ```bash
-curl -X POST "http://localhost:8080/api/voiceTest?code=902" \
+curl -X POST "http://98.70.40.108/api/api/voiceTest?code=902" \
   -F "audio=@female_voice.wav" \
   --output male_voice.wav
 ```
 
 ##### Robot Voice (Code 903)
 ```bash
-curl -X POST "http://localhost:8080/api/voiceTest?code=903" \
+curl -X POST "http://98.70.40.108/api/api/voiceTest?code=903" \
   -F "audio=@original_voice.wav" \
   --output robot_voice.wav
 ```
@@ -138,7 +138,7 @@ Process audio files with custom transformation parameters for fine-tuned voice m
 
 **cURL:**
 ```bash
-curl -X POST "http://localhost:8080/api/process?shift=10.0&formant=2.0&base=100.0" \
+curl -X POST "http://98.70.40.108/api/api/process?shift=10.0&formant=2.0&base=100.0" \
   -F "audio=@/path/to/audio.wav" \
   --output processed_audio.wav
 ```
@@ -176,7 +176,7 @@ Process raw audio data in real-time with custom parameters.
 
 **cURL:**
 ```bash
-curl -X POST "http://localhost:8080/api/process-live?shift=10.0&formant=2.0&base=100.0" \
+curl -X POST "http://98.70.40.108/api/api/process-live?shift=10.0&formant=2.0&base=100.0" \
   -H "Content-Type: application/octet-stream" \
   --data-binary "@audio_data.raw" \
   --output processed_audio.wav
@@ -273,7 +273,7 @@ Import the provided `VoiceChanger_API.postman_collection.json` file into Postman
 ### Step 2: Test with voiceTest Endpoint
 ```bash
 # Male to Female transformation
-curl -X POST "http://localhost:8080/api/voiceTest?code=901" \
+curl -X POST "http://98.70.40.108/api/api/voiceTest?code=901" \
   -F "audio=@sample.wav" \
   --output output.wav
 ```
