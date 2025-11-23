@@ -30,15 +30,15 @@ public class VoiceProcessRequest {
     // Preset configurations
     public static VoiceProcessRequest maleToFemale() {
         return new VoiceProcessRequest(10.0f, 2.0f, 100.0f);
-    }
+    } //901
 
     public static VoiceProcessRequest femaleToMale() {
-        return new VoiceProcessRequest(-10.0f, -2.0f, 200.0f);
-    }
+        return new VoiceProcessRequest(-15.0f, -4.0f, 300.0f);
+    } // 902
 
     public static VoiceProcessRequest robotVoice() {
-        return new VoiceProcessRequest(0.0f, 5.0f, 50.0f);
-    }
+        return new VoiceProcessRequest(0.8f, 4.0f, 120.0f);
+    } //903
 
     public static VoiceProcessRequest deepVoice() {
         return new VoiceProcessRequest(-15.0f, -3.0f, 250.0f);

@@ -93,4 +93,57 @@ public class VoiceController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PostMapping("/voiceTest")
+    @ResponseBody
+    public ResponseEntity<byte[]> voiceTest(
+            @RequestParam("audio") MultipartFile audioFile,
+            @RequestParam("code") int code) {
+
+        try {
+            logger.info("Received /voiceTest request with code: {}", code);
+            logger.info("Received audio file: name={}, size={} bytes, type={}",
+                    audioFile.getOriginalFilename(), audioFile.getSize(), audioFile.getContentType());
+
+            VoiceProcessRequest request;
+            String transformationType;
+
+            // Determine transformation based on code
+            switch (code) {
+                case 901:
+                    request = VoiceProcessRequest.maleToFemale();
+                    transformationType = "Male to Female";
+                    break;
+                case 902:
+                    request = VoiceProcessRequest.femaleToMale();
+                    transformationType = "Female to Male";
+                    break;
+                case 903:
+                    request = VoiceProcessRequest.robotVoice();
+                    transformationType = "Robot Voice";
+                    break;
+                default:
+                    logger.error("Invalid code: {}. Valid codes are 901, 902, 903", code);
+                    return ResponseEntity.badRequest().build();
+            }
+
+            logger.info("Applying transformation: {}", transformationType);
+
+            // Process audio
+            byte[] processedAudio = voiceProcessingService.processAudio(audioFile.getBytes(), request);
+
+            // Return processed audio
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", "processed_audio.wav");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(processedAudio);
+
+        } catch (Exception e) {
+            logger.error("Error processing audio in voiceTest", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

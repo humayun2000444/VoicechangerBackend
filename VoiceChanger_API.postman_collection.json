@@ -1,0 +1,212 @@
+{
+	"info": {
+		"_postman_id": "voice-changer-api-collection",
+		"name": "Voice Changer API",
+		"description": "Collection of voice transformation API endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Voice Test - Male to Female (901)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "audio",
+							"type": "file",
+							"src": []
+						},
+						{
+							"key": "code",
+							"value": "901",
+							"type": "text",
+							"description": "Transformation code: 901 = Male to Female"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/voiceTest?code=901",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"voiceTest"
+					],
+					"query": [
+						{
+							"key": "code",
+							"value": "901",
+							"description": "901 = Male to Female"
+						}
+					]
+				},
+				"description": "Transform male voice to female voice using preset parameters"
+			},
+			"response": []
+		},
+		{
+			"name": "Voice Test - Female to Male (902)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "audio",
+							"type": "file",
+							"src": []
+						},
+						{
+							"key": "code",
+							"value": "902",
+							"type": "text",
+							"description": "Transformation code: 902 = Female to Male"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/voiceTest?code=902",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"voiceTest"
+					],
+					"query": [
+						{
+							"key": "code",
+							"value": "902",
+							"description": "902 = Female to Male"
+						}
+					]
+				},
+				"description": "Transform female voice to male voice using preset parameters"
+			},
+			"response": []
+		},
+		{
+			"name": "Voice Test - Robot Voice (903)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "audio",
+							"type": "file",
+							"src": []
+						},
+						{
+							"key": "code",
+							"value": "903",
+							"type": "text",
+							"description": "Transformation code: 903 = Robot Voice"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/voiceTest?code=903",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"voiceTest"
+					],
+					"query": [
+						{
+							"key": "code",
+							"value": "903",
+							"description": "903 = Robot Voice"
+						}
+					]
+				},
+				"description": "Transform voice to robot voice using preset parameters"
+			},
+			"response": []
+		},
+		{
+			"name": "Process Audio (Custom Parameters)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "audio",
+							"type": "file",
+							"src": []
+						},
+						{
+							"key": "shift",
+							"value": "10.0",
+							"type": "text",
+							"description": "Pitch shift value"
+						},
+						{
+							"key": "formant",
+							"value": "2.0",
+							"type": "text",
+							"description": "Formant shift value"
+						},
+						{
+							"key": "base",
+							"value": "100.0",
+							"type": "text",
+							"description": "Base frequency value"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/process?shift=10.0&formant=2.0&base=100.0",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"process"
+					],
+					"query": [
+						{
+							"key": "shift",
+							"value": "10.0"
+						},
+						{
+							"key": "formant",
+							"value": "2.0"
+						},
+						{
+							"key": "base",
+							"value": "100.0"
+						}
+					]
+				},
+				"description": "Process audio with custom transformation parameters"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}
