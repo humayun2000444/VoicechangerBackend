@@ -27,11 +27,12 @@ public class TalkTimeService {
     /**
      * Check & reserve talktime before bridging or transferring
      */
-    public boolean checkAndReserveTalkTime(String uuid, String aParty, String bParty, String email) {
+    public boolean checkAndReserveTalkTime(String uuid, String aParty, String bParty, String email, String sourceIp) {
         try {
-            String url = String.format("%s?aPartyMsisdn=%s&authKey=%s&bPartyMsisdn=%s&email=%s",
-                    GET_API, aParty, AUTH_KEY, bParty, email);
+            String url = String.format("%s?aPartyMsisdn=%s&authKey=%s&bPartyMsisdn=%s&email=%s&sourceIp=%s",
+                    GET_API, aParty, AUTH_KEY, bParty, email, sourceIp);
 
+            System.out.println("🌐 Calling TalkTime API with sourceIp=" + sourceIp);
             Map<String, Object> body = restTemplate.getForObject(url, Map.class);
 
             if (body == null) return false;

@@ -70,8 +70,14 @@ public class CallHandlerService {
         String aParty = parts[0], bParty = parts[1], email = parts[2];
         log.debug("📋 Parsed user data - A-Party={}, B-Party={}, Email={}", aParty, bParty, email);
 
+        // Extract source IP from headers (FreeSWITCH provides this in multiple variables)
+        String sourceIp = headers.getOrDefault("variable_sip_received_ip",
+                          headers.getOrDefault("variable_sip_network_ip",
+                          headers.getOrDefault("variable_sip_req_host", "127.0.0.1")));
+        log.debug("🌐 Source IP detected: {}", sourceIp);
+
         try {
-            if (!talkTimeService.checkAndReserveTalkTime(uuid, aParty, bParty, email)) {
+            if (!talkTimeService.checkAndReserveTalkTime(uuid, aParty, bParty, email, sourceIp)) {
                 log.warn("❌ Call {} dropped from park due to insufficient talk time", uuid);
                 eslService.sendCommand("uuid_kill " + uuid);
                 return;
