@@ -27,7 +27,7 @@ public class TalkTimeService {
     /**
      * Check & reserve talktime before bridging or transferring
      */
-    public boolean checkAndReserveTalkTime(String uuid, String aParty, String bParty, String email, String sourceIp) {
+    public boolean checkAndReserveTalkTime(String uuid, String aParty, String bParty, String email, String sourceIp, Date startStamp) {
         try {
             String url = String.format("%s?aPartyMsisdn=%s&authKey=%s&bPartyMsisdn=%s&email=%s&sourceIp=%s",
                     GET_API, aParty, AUTH_KEY, bParty, email, sourceIp);
@@ -42,7 +42,8 @@ public class TalkTimeService {
                 int talkTime = (int) body.get("talkTime");
                 if (talkTime > 0) {
                     String sessionId = (String) body.get("sessionId");
-                    Date startTime = new Date();
+                    // Use FreeSWITCH start_stamp instead of Java new Date()
+                    Date startTime = (startStamp != null) ? startStamp : new Date();
 
                     activeSessions.put(uuid, new SessionInfo(sessionId, startTime, talkTime));
                     System.out.printf("✅ TalkTime reserved | SessionId=%s, Duration=\u001B[33m%ds\u001B[0m, Status=Success%n",
@@ -76,12 +77,12 @@ public class TalkTimeService {
     }
 
     /**
-     * Mark when the call is answered
+     * Mark when the call is answered with timestamp from FreeSWITCH
      */
-    public void markAnswered(String uuid) {
+    public void markAnswered(String uuid, Date answerStamp) {
         SessionInfo session = activeSessions.get(uuid);
         if (session != null) {
-            session.setAnswerTime(new Date());
+            session.setAnswerTime(answerStamp);
             System.out.println("📞 Call answered → UUID=" + uuid + ", answerTime=" + session.getAnswerTime());
         }
     }

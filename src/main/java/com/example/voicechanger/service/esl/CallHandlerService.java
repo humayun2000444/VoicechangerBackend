@@ -3,8 +3,11 @@ package com.example.voicechanger.service.esl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -76,8 +79,12 @@ public class CallHandlerService {
                           headers.getOrDefault("variable_sip_req_host", "127.0.0.1")));
         log.debug("🌐 Source IP detected: {}", sourceIp);
 
+        // Extract start_stamp from FreeSWITCH CDR
+        Date startStamp = extractTimestamp(headers, "variable_start_epoch", "variable_start_stamp");
+        log.debug("⏰ Start timestamp from CDR: {}", startStamp);
+
         try {
-            if (!talkTimeService.checkAndReserveTalkTime(uuid, aParty, bParty, email, sourceIp)) {
+            if (!talkTimeService.checkAndReserveTalkTime(uuid, aParty, bParty, email, sourceIp, startStamp)) {
                 log.warn("❌ Call {} dropped from park due to insufficient talk time", uuid);
                 eslService.sendCommand("uuid_kill " + uuid);
                 return;
@@ -96,8 +103,12 @@ public class CallHandlerService {
 
         log.info("✅ Call answered | Caller={}, UUID={}", caller, uuid);
 
+        // Extract answer_stamp from FreeSWITCH CDR
+        Date answerStamp = extractTimestamp(headers, "variable_answer_epoch", "variable_answer_stamp");
+        log.debug("⏰ Answer timestamp from CDR: {}", answerStamp);
+
         try {
-            talkTimeService.markAnswered(uuid);
+            talkTimeService.markAnswered(uuid, answerStamp);
             log.debug("📝 Call {} marked as answered in talk time service", uuid);
         } catch (Exception e) {
             log.error("❌ Error marking call {} as answered: {}", uuid, e.getMessage(), e);
@@ -116,9 +127,13 @@ public class CallHandlerService {
         activeBridges.remove(hangupUuid);
         log.debug("🗑️ Removed bridge info for UUID: {}", hangupUuid);
 
+        // Extract end_stamp from FreeSWITCH CDR
+        Date endStamp = extractTimestamp(headers, "variable_end_epoch", "variable_end_stamp");
+        log.debug("⏰ End timestamp from CDR: {}", endStamp);
+
         try {
             if ("inbound".equalsIgnoreCase(direction)) {
-                talkTimeService.deductTalkTime(hangupUuid, new Date());
+                talkTimeService.deductTalkTime(hangupUuid, endStamp);
             }
         } catch (Exception e) {
             log.error("❌ Error processing hangup for call {}: {}", hangupUuid, e.getMessage(), e);
@@ -204,5 +219,39 @@ public class CallHandlerService {
      */
     public int getActiveBridgeCount() {
         return activeBridges.size();
+    }
+
+    /**
+     * Extract timestamp from FreeSWITCH event headers
+     * Tries to use epoch time first, falls back to formatted timestamp, or creates new Date
+     */
+    private Date extractTimestamp(Map<String, String> headers, String epochKey, String stampKey) {
+        try {
+            // Try epoch time first (more reliable)
+            String epochStr = headers.get(epochKey);
+            if (epochStr != null && !epochStr.isEmpty()) {
+                long epoch = Long.parseLong(epochStr);
+                // FreeSWITCH epoch is in seconds, Java Date needs milliseconds
+                // If value is already in milliseconds (> 10 billion), use as-is
+                if (epoch < 10000000000L) {
+                    epoch = epoch * 1000;  // Convert seconds to milliseconds
+                }
+                return new Date(epoch);
+            }
+
+            // Try formatted timestamp
+            String stampStr = headers.get(stampKey);
+            if (stampStr != null && !stampStr.isEmpty()) {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                return sdf.parse(stampStr);
+            }
+        } catch (ParseException | NumberFormatException e) {
+            log.warn("⚠️ Failed to parse timestamp from headers: epochKey={}, stampKey={}, error={}",
+                    epochKey, stampKey, e.getMessage());
+        }
+
+        // Fallback to current time
+        return new Date();
     }
 }
