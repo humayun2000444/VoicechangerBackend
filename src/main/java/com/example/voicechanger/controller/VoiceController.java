@@ -2,6 +2,8 @@ package com.example.voicechanger.controller;
 
 
 import com.example.voicechanger.dto.VoiceProcessRequest;
+import com.example.voicechanger.exception.AudioProcessingException;
+import com.example.voicechanger.exception.InvalidRequestException;
 import com.example.voicechanger.service.VoiceProcessingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,12 +37,17 @@ public class VoiceController {
             @RequestParam(value = "formant", defaultValue = "2.0") double formant,
             @RequestParam(value = "base", defaultValue = "100.0") double base) {
 
-        try {
-            logger.info("Received /process request");
-            logger.info("Shift: {}, Formant: {}, Base: {}", shift, formant, base);
-            logger.info("Received audio file: name={}, size={} bytes, type={}",
-                    audioFile.getOriginalFilename(), audioFile.getSize(), audioFile.getContentType());
+        logger.info("Received /process request");
+        logger.info("Shift: {}, Formant: {}, Base: {}", shift, formant, base);
+        logger.info("Received audio file: name={}, size={} bytes, type={}",
+                audioFile.getOriginalFilename(), audioFile.getSize(), audioFile.getContentType());
 
+        // Validate audio file
+        if (audioFile == null || audioFile.isEmpty()) {
+            throw new InvalidRequestException("Audio file is required");
+        }
+
+        try {
             // Create request object
             VoiceProcessRequest request = new VoiceProcessRequest();
             request.setShift((float) shift);
@@ -61,7 +68,7 @@ public class VoiceController {
 
         } catch (Exception e) {
             logger.error("Error processing audio", e);
-            return ResponseEntity.internalServerError().build();
+            throw new AudioProcessingException("Failed to process audio file: " + e.getMessage(), e);
         }
     }
 
@@ -73,10 +80,15 @@ public class VoiceController {
             @RequestParam(value = "formant", defaultValue = "2.0") double formant,
             @RequestParam(value = "base", defaultValue = "100.0") double base) {
 
-        try {
-            logger.info("Received live audio processing request");
-            logger.info("Shift: {}, Formant: {}, Base: {}", shift, formant, base);
+        logger.info("Received live audio processing request");
+        logger.info("Shift: {}, Formant: {}, Base: {}", shift, formant, base);
 
+        // Validate audio data
+        if (audioData == null || audioData.length == 0) {
+            throw new InvalidRequestException("Audio data is required");
+        }
+
+        try {
             VoiceProcessRequest request = new VoiceProcessRequest();
             request.setShift((float) shift);
             request.setFormant((float) formant);
@@ -90,7 +102,7 @@ public class VoiceController {
 
         } catch (Exception e) {
             logger.error("Error processing live audio", e);
-            return ResponseEntity.internalServerError().build();
+            throw new AudioProcessingException("Failed to process live audio: " + e.getMessage(), e);
         }
     }
 
@@ -100,35 +112,40 @@ public class VoiceController {
             @RequestParam("audio") MultipartFile audioFile,
             @RequestParam("code") int code) {
 
+        logger.info("Received /voiceTest request with code: {}", code);
+        logger.info("Received audio file: name={}, size={} bytes, type={}",
+                audioFile.getOriginalFilename(), audioFile.getSize(), audioFile.getContentType());
+
+        // Validate audio file
+        if (audioFile == null || audioFile.isEmpty()) {
+            throw new InvalidRequestException("Audio file is required");
+        }
+
+        VoiceProcessRequest request;
+        String transformationType;
+
+        // Determine transformation based on code
+        switch (code) {
+            case 901:
+                request = VoiceProcessRequest.maleToFemale();
+                transformationType = "Male to Female";
+                break;
+            case 902:
+                request = VoiceProcessRequest.femaleToMale();
+                transformationType = "Female to Male";
+                break;
+            case 903:
+                request = VoiceProcessRequest.robotVoice();
+                transformationType = "Robot Voice";
+                break;
+            default:
+                logger.error("Invalid code: {}. Valid codes are 901, 902, 903", code);
+                throw new InvalidRequestException("Invalid transformation code. Valid codes are 901 (Male to Female), 902 (Female to Male), 903 (Robot Voice)");
+        }
+
+        logger.info("Applying transformation: {}", transformationType);
+
         try {
-            logger.info("Received /voiceTest request with code: {}", code);
-            logger.info("Received audio file: name={}, size={} bytes, type={}",
-                    audioFile.getOriginalFilename(), audioFile.getSize(), audioFile.getContentType());
-
-            VoiceProcessRequest request;
-            String transformationType;
-
-            // Determine transformation based on code
-            switch (code) {
-                case 901:
-                    request = VoiceProcessRequest.maleToFemale();
-                    transformationType = "Male to Female";
-                    break;
-                case 902:
-                    request = VoiceProcessRequest.femaleToMale();
-                    transformationType = "Female to Male";
-                    break;
-                case 903:
-                    request = VoiceProcessRequest.robotVoice();
-                    transformationType = "Robot Voice";
-                    break;
-                default:
-                    logger.error("Invalid code: {}. Valid codes are 901, 902, 903", code);
-                    return ResponseEntity.badRequest().build();
-            }
-
-            logger.info("Applying transformation: {}", transformationType);
-
             // Process audio
             byte[] processedAudio = voiceProcessingService.processAudio(audioFile.getBytes(), request);
 
@@ -143,7 +160,7 @@ public class VoiceController {
 
         } catch (Exception e) {
             logger.error("Error processing audio in voiceTest", e);
-            return ResponseEntity.internalServerError().build();
+            throw new AudioProcessingException("Failed to process audio with transformation code " + code + ": " + e.getMessage(), e);
         }
     }
 }

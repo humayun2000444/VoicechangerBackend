@@ -1,0 +1,248 @@
+{
+	"info": {
+		"_postman_id": "magic-call-complete-2025",
+		"name": "Magic Call API - Complete Collection",
+		"description": "Complete API with Authentication, User Details CRUD, and Voice Processing\n\n## Features:\n- JWT-based authentication\n- Role-based access control (ROLE_USER, ROLE_ADMIN)\n- User details management\n- Voice transformation (Male to Female, Female to Male, Robot)\n- Automatic FreeSWITCH user provisioning\n\n## Error Codes:\n- USERNAME_EXISTS (409): Username already taken\n- INVALID_CREDENTIALS (401): Invalid username or password\n- INVALID_REQUEST (400): Missing or invalid request data\n- FREESWITCH_CONFIG_FAILED (500): FreeSWITCH configuration creation failed\n- AUDIO_PROCESSING_FAILED (500): Audio processing error\n\n## Notes:\n- User registration automatically creates FreeSWITCH configuration\n- If FreeSWITCH config fails, user is NOT created (transaction rollback)\n- All endpoints except auth and voice processing require JWT token",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"description": "User registration and login endpoints. No authentication required.",
+			"item": [
+				{
+					"name": "Signup",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": ["if (pm.response.code === 201) { var jsonData = pm.response.json(); pm.environment.set('jwt_token', jsonData.token); }"],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"Pass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {"raw": "{{base_url}}/api/auth/signup", "host": ["{{base_url}}"], "path": ["api", "auth", "signup"]},
+						"description": "Register a new user with ROLE_USER. Automatically creates FreeSWITCH configuration.\n\n**Success Response (201):**\n```json\n{\n  \"token\": \"eyJhbGci...\",\n  \"username\": \"testuser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"roles\": [\"ROLE_USER\"],\n  \"createdAt\": \"2025-12-20T21:26:46.435740605\",\n  \"message\": \"User registered successfully\"\n}\n```\n\n**Error Response (409 - Username Exists):**\n```json\n{\n  \"statusCode\": 409,\n  \"error\": \"USERNAME_EXISTS\",\n  \"message\": \"Username 'testuser' is already taken\",\n  \"path\": \"/api/auth/signup\",\n  \"timestamp\": \"2025-12-20T21:26:46\"\n}\n```\n\n**Error Response (500 - FreeSWITCH Config Failed):**\n```json\n{\n  \"statusCode\": 500,\n  \"error\": \"FREESWITCH_CONFIG_FAILED\",\n  \"message\": \"Failed to create FreeSWITCH config directory. Please ensure the directory exists and has proper permissions: /usr/local/freeswitch/conf/directory/default\",\n  \"path\": \"/api/auth/signup\",\n  \"timestamp\": \"2025-12-20T21:26:46\"\n}\n```"
+					}
+				},
+				{
+					"name": "Login",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": ["if (pm.response.code === 200) { var jsonData = pm.response.json(); pm.environment.set('jwt_token', jsonData.token); }"],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"Pass123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {"raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"]},
+						"description": "Login with username and password to get JWT token.\n\n**Success Response (200):**\n```json\n{\n  \"token\": \"eyJhbGci...\",\n  \"username\": \"testuser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"roles\": [\"ROLE_USER\"],\n  \"createdAt\": \"2025-12-20T21:26:46.435740605\",\n  \"message\": \"Login successful\"\n}\n```\n\n**Error Response (401):**\n```json\n{\n  \"statusCode\": 401,\n  \"error\": \"INVALID_CREDENTIALS\",\n  \"message\": \"Invalid username or password\",\n  \"path\": \"/api/auth/login\",\n  \"timestamp\": \"2025-12-20T21:26:46\"\n}\n```"
+					}
+				}
+			]
+		},
+		{
+			"name": "User Details Management",
+			"description": "CRUD operations for user details. Requires JWT authentication.",
+			"item": [
+				{
+					"name": "Create My User Details",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dateOfBirth\": \"1990-01-15\",\n  \"gender\": \"Male\",\n  \"address\": \"123 Main St, City, Country\",\n  \"email\": \"user@example.com\",\n  \"profilePhoto\": \"/images/profile.jpg\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {"raw": "{{base_url}}/api/user-details/my", "host": ["{{base_url}}"], "path": ["api", "user-details", "my"]},
+						"description": "Create user details for the authenticated user."
+					}
+				},
+				{
+					"name": "Get My User Details",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "{{base_url}}/api/user-details/my", "host": ["{{base_url}}"], "path": ["api", "user-details", "my"]},
+						"description": "Get user details for the authenticated user."
+					}
+				},
+				{
+					"name": "Update My User Details",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dateOfBirth\": \"1990-01-15\",\n  \"gender\": \"Male\",\n  \"address\": \"456 New St, City, Country\",\n  \"email\": \"newemail@example.com\",\n  \"profilePhoto\": \"/images/newprofile.jpg\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {"raw": "{{base_url}}/api/user-details/my", "host": ["{{base_url}}"], "path": ["api", "user-details", "my"]},
+						"description": "Update user details for the authenticated user."
+					}
+				},
+				{
+					"name": "Delete My User Details",
+					"request": {
+						"method": "DELETE",
+						"url": {"raw": "{{base_url}}/api/user-details/my", "host": ["{{base_url}}"], "path": ["api", "user-details", "my"]},
+						"description": "Delete user details for the authenticated user."
+					}
+				},
+				{
+					"name": "Get All User Details (Admin)",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "{{base_url}}/api/user-details/all", "host": ["{{base_url}}"], "path": ["api", "user-details", "all"]},
+						"description": "Get all user details. **Requires ROLE_ADMIN.**"
+					}
+				},
+				{
+					"name": "Get User Details By ID (Admin)",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "{{base_url}}/api/user-details/1", "host": ["{{base_url}}"], "path": ["api", "user-details", "1"]},
+						"description": "Get user details by ID. **Requires ROLE_ADMIN.**"
+					}
+				},
+				{
+					"name": "Update User Details By ID (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dateOfBirth\": \"1985-05-20\",\n  \"gender\": \"Female\",\n  \"address\": \"Updated Address\",\n  \"email\": \"admin@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {"raw": "{{base_url}}/api/user-details/1", "host": ["{{base_url}}"], "path": ["api", "user-details", "1"]},
+						"description": "Update user details by ID. **Requires ROLE_ADMIN.**"
+					}
+				},
+				{
+					"name": "Delete User Details By ID (Admin)",
+					"request": {
+						"method": "DELETE",
+						"url": {"raw": "{{base_url}}/api/user-details/1", "host": ["{{base_url}}"], "path": ["api", "user-details", "1"]},
+						"description": "Delete user details by ID. **Requires ROLE_ADMIN.**"
+					}
+				}
+			]
+		},
+		{
+			"name": "Voice Processing",
+			"description": "Voice transformation endpoints. No authentication required.",
+			"item": [
+				{
+					"name": "Voice Test - Male to Female (901)",
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "audio", "type": "file", "src": [], "description": "Audio file to process"},
+								{"key": "code", "value": "901", "type": "text", "description": "Transformation code: 901 = Male to Female"}
+							]
+						},
+						"url": {"raw": "{{base_url}}/api/voiceTest?code=901", "host": ["{{base_url}}"], "path": ["api", "voiceTest"], "query": [{"key": "code", "value": "901"}]},
+						"description": "Transform voice from Male to Female using preset parameters.\n\n**Code 901 Parameters:**\n- Shift: 5.0\n- Formant: 1.4\n- Base: 100.0"
+					}
+				},
+				{
+					"name": "Voice Test - Female to Male (902)",
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "audio", "type": "file", "src": [], "description": "Audio file to process"},
+								{"key": "code", "value": "902", "type": "text", "description": "Transformation code: 902 = Female to Male"}
+							]
+						},
+						"url": {"raw": "{{base_url}}/api/voiceTest?code=902", "host": ["{{base_url}}"], "path": ["api", "voiceTest"], "query": [{"key": "code", "value": "902"}]},
+						"description": "Transform voice from Female to Male using preset parameters.\n\n**Code 902 Parameters:**\n- Shift: -5.0\n- Formant: 0.8\n- Base: 100.0"
+					}
+				},
+				{
+					"name": "Voice Test - Robot Voice (903)",
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "audio", "type": "file", "src": [], "description": "Audio file to process"},
+								{"key": "code", "value": "903", "type": "text", "description": "Transformation code: 903 = Robot Voice"}
+							]
+						},
+						"url": {"raw": "{{base_url}}/api/voiceTest?code=903", "host": ["{{base_url}}"], "path": ["api", "voiceTest"], "query": [{"key": "code", "value": "903"}]},
+						"description": "Transform voice to Robot Voice using preset parameters.\n\n**Code 903 Parameters:**\n- Shift: 0.0\n- Formant: 1.0\n- Base: 80.0"
+					}
+				},
+				{
+					"name": "Process Audio - Custom Parameters",
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "audio", "type": "file", "src": [], "description": "Audio file to process"},
+								{"key": "shift", "value": "10.0", "type": "text", "description": "Pitch shift value"},
+								{"key": "formant", "value": "2.0", "type": "text", "description": "Formant value"},
+								{"key": "base", "value": "100.0", "type": "text", "description": "Base frequency"}
+							]
+						},
+						"url": {"raw": "{{base_url}}/api/process?shift=10.0&formant=2.0&base=100.0", "host": ["{{base_url}}"], "path": ["api", "process"], "query": [{"key": "shift", "value": "10.0"}, {"key": "formant", "value": "2.0"}, {"key": "base", "value": "100.0"}]},
+						"description": "Process audio with custom transformation parameters.\n\n**Parameters:**\n- **shift**: Pitch shift amount (positive = higher, negative = lower)\n- **formant**: Formant preservation factor (affects vocal characteristics)\n- **base**: Base frequency for processing"
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{"key": "base_url", "value": "http://localhost:8080", "type": "string"},
+		{"key": "jwt_token", "value": "", "type": "string"}
+	]
+}

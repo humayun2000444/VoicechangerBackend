@@ -1,0 +1,392 @@
+{
+	"info": {
+		"_postman_id": "magic-call-api-collection-2025",
+		"name": "Magic Call API - Complete Collection",
+		"description": "Complete API collection for Magic Call Voice Changer application including Authentication and Voice Processing endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Signup - Register New User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"jwt_token\", jsonData.token);",
+									"    pm.environment.set(\"username\", jsonData.username);",
+									"    console.log(\"JWT Token saved: \" + jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser123\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/signup",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signup"
+							]
+						},
+						"description": "Register a new user account. Automatically assigns ROLE_USER and creates FreeSWITCH extension."
+					},
+					"response": []
+				},
+				{
+					"name": "Login - Get JWT Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"jwt_token\", jsonData.token);",
+									"    pm.environment.set(\"username\", jsonData.username);",
+									"    console.log(\"JWT Token saved: \" + jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser123\",\n  \"password\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with username and password to receive JWT token"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for user registration and login"
+		},
+		{
+			"name": "Voice Processing",
+			"item": [
+				{
+					"name": "Voice Test - Male to Female (901)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "audio",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "code",
+									"value": "901",
+									"type": "text",
+									"description": "901 = Male to Female"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/voiceTest?code=901",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"voiceTest"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": "901",
+									"description": "Transformation code"
+								}
+							]
+						},
+						"description": "Transform male voice to female voice using preset parameters (shift: 10.0, formant: 2.0, base: 100.0)"
+					},
+					"response": []
+				},
+				{
+					"name": "Voice Test - Female to Male (902)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "audio",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "code",
+									"value": "902",
+									"type": "text",
+									"description": "902 = Female to Male"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/voiceTest?code=902",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"voiceTest"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": "902"
+								}
+							]
+						},
+						"description": "Transform female voice to male voice using preset parameters (shift: -15.0, formant: -4.0, base: 300.0)"
+					},
+					"response": []
+				},
+				{
+					"name": "Voice Test - Robot Voice (903)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "audio",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "code",
+									"value": "903",
+									"type": "text",
+									"description": "903 = Robot Voice"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/voiceTest?code=903",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"voiceTest"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": "903"
+								}
+							]
+						},
+						"description": "Transform voice to robot voice using preset parameters (shift: 0.8, formant: 4.0, base: 120.0)"
+					},
+					"response": []
+				},
+				{
+					"name": "Process Audio - Custom Parameters",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "audio",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "shift",
+									"value": "10.0",
+									"type": "text",
+									"description": "Pitch shift value (-20.0 to 20.0)"
+								},
+								{
+									"key": "formant",
+									"value": "2.0",
+									"type": "text",
+									"description": "Formant shift value (-5.0 to 5.0)"
+								},
+								{
+									"key": "base",
+									"value": "100.0",
+									"type": "text",
+									"description": "Base frequency (50.0 to 400.0)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/process?shift=10.0&formant=2.0&base=100.0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"process"
+							],
+							"query": [
+								{
+									"key": "shift",
+									"value": "10.0"
+								},
+								{
+									"key": "formant",
+									"value": "2.0"
+								},
+								{
+									"key": "base",
+									"value": "100.0"
+								}
+							]
+						},
+						"description": "Process audio with custom transformation parameters"
+					},
+					"response": []
+				},
+				{
+					"name": "Process Live Audio",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/octet-stream"
+							}
+						],
+						"body": {
+							"mode": "file",
+							"file": {}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/process-live?shift=10.0&formant=2.0&base=100.0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"process-live"
+							],
+							"query": [
+								{
+									"key": "shift",
+									"value": "10.0"
+								},
+								{
+									"key": "formant",
+									"value": "2.0"
+								},
+								{
+									"key": "base",
+									"value": "100.0"
+								}
+							]
+						},
+						"description": "Process raw audio data in real-time"
+					},
+					"response": []
+				}
+			],
+			"description": "Voice processing and transformation endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "username",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
