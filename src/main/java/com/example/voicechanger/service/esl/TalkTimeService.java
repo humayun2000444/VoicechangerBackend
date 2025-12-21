@@ -13,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TalkTimeService {
 
     private static final String AUTH_KEY = "59d09db@MGC40f434c36b2d36ed39e5d35be1@PXVI77be602ae166cb345549c3a0dfe";
-    private static final String GET_API = "https://applb.magiccall.co:10016/mgcTest/talktime/getTalkTime";
-    private static final String DEDUCT_API = "https://applb.magiccall.co:10016/mgcTest/talktime/deductTalkTime";
+    private static final String GET_API = "http://localhost:8086/p16project/talktime/getTalkTime";
+    private static final String DEDUCT_API = "http://localhost:8086/p16project/talktime/deductTalkTime";
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final EslService eslService;
