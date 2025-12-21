@@ -9,10 +9,8 @@ CREATE DATABASE IF NOT EXISTS `magic_call` DEFAULT CHARACTER SET utf8mb4 COLLATE
 USE `magic_call`;
 
 -- Drop tables if exists (for clean restore)
-DROP TABLE IF EXISTS `package_purchases`;
-DROP TABLE IF EXISTS `package_voice_types`;
+DROP TABLE IF EXISTS `call_history`;
 DROP TABLE IF EXISTS `balances`;
-DROP TABLE IF EXISTS `packages`;
 DROP TABLE IF EXISTS `transactions`;
 DROP TABLE IF EXISTS `voice_types`;
 DROP TABLE IF EXISTS `user_roles`;
@@ -127,49 +125,6 @@ CREATE TABLE `transactions` (
   KEY `idx_id_user` (`id_user`),
   CONSTRAINT `FK_transactions_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Top-up transactions with manual admin approval';
-
--- Table structure for table `packages`
-CREATE TABLE `packages` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `package_name` VARCHAR(200) NOT NULL,
-  `duration` BIGINT NOT NULL COMMENT 'Duration in seconds',
-  `created_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `expire_date` DATE NOT NULL,
-  `price` DECIMAL(10,2) NOT NULL,
-  `vat` DECIMAL(10,2) NOT NULL,
-  `total_amount` DECIMAL(10,2) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_package_name` (`package_name`),
-  KEY `idx_expire_date` (`expire_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Table structure for table `package_voice_types` (junction table)
-CREATE TABLE `package_voice_types` (
-  `package_id` BIGINT NOT NULL,
-  `voice_type_id` BIGINT NOT NULL,
-  PRIMARY KEY (`package_id`, `voice_type_id`),
-  KEY `FK_voice_type_id` (`voice_type_id`),
-  CONSTRAINT `FK_package_voice_types_package` FOREIGN KEY (`package_id`) REFERENCES `packages` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `FK_package_voice_types_voice` FOREIGN KEY (`voice_type_id`) REFERENCES `voice_types` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Table structure for table `package_purchases`
-CREATE TABLE `package_purchases` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `purchase_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `purchase_amount` DECIMAL(10,2) NOT NULL,
-  `id_transaction` BIGINT DEFAULT NULL,
-  `id_user` BIGINT NOT NULL,
-  `id_package` BIGINT NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `FK_purchase_transaction` (`id_transaction`),
-  KEY `FK_purchase_user` (`id_user`),
-  KEY `FK_purchase_package` (`id_package`),
-  KEY `idx_purchase_date` (`purchase_date`),
-  CONSTRAINT `FK_package_purchases_transaction` FOREIGN KEY (`id_transaction`) REFERENCES `transactions` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `FK_package_purchases_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `FK_package_purchases_package` FOREIGN KEY (`id_package`) REFERENCES `packages` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for table `balances`
 CREATE TABLE `balances` (
