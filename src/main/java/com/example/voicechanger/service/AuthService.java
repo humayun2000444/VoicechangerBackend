@@ -37,6 +37,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final FreeSwitchConfigService freeSwitchConfigService;
     private final BalanceService balanceService;
+    private final VoicePurchaseService voicePurchaseService;
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {
@@ -92,6 +93,11 @@ public class AuthService {
         log.info("Adding 30-second welcome balance for user: {} (ID: {})", savedUser.getUsername(), savedUser.getId());
         balanceService.addBalance(savedUser.getId(), 30L);
         log.info("Welcome balance added successfully for user: {}", savedUser.getUsername());
+
+        // Assign default voice types (ID 3 and 4) to new user
+        log.info("Assigning default voice types to user: {} (ID: {})", savedUser.getUsername(), savedUser.getId());
+        voicePurchaseService.assignDefaultVoiceTypes(savedUser.getId());
+        log.info("Default voice types assigned successfully for user: {}", savedUser.getUsername());
 
         // Generate JWT token
         String token = jwtUtil.generateToken(savedUser);

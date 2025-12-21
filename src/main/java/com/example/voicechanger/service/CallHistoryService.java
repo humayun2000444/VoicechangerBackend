@@ -25,22 +25,36 @@ public class CallHistoryService {
     private final UserRepository userRepository;
 
     /**
-     * Get call history for the authenticated user
+     * Get call history for the authenticated user (ordered by latest first)
      */
     public List<CallHistoryResponse> getMyCallHistory() {
         String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
         log.info("Fetching call history for authenticated user: {}", username);
         return callHistoryRepository.findByAparty(username).stream()
+                .sorted((a, b) -> {
+                    // Sort by createTime descending (latest first)
+                    if (a.getCreateTime() == null && b.getCreateTime() == null) return 0;
+                    if (a.getCreateTime() == null) return 1;
+                    if (b.getCreateTime() == null) return -1;
+                    return b.getCreateTime().compareTo(a.getCreateTime());
+                })
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Get all call history records
+     * Get all call history records (ordered by latest first)
      */
     public List<CallHistoryResponse> getAllCallHistory() {
         log.info("Fetching all call history records");
         return callHistoryRepository.findAll().stream()
+                .sorted((a, b) -> {
+                    // Sort by createTime descending (latest first)
+                    if (a.getCreateTime() == null && b.getCreateTime() == null) return 0;
+                    if (a.getCreateTime() == null) return 1;
+                    if (b.getCreateTime() == null) return -1;
+                    return b.getCreateTime().compareTo(a.getCreateTime());
+                })
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -66,41 +80,69 @@ public class CallHistoryService {
     }
 
     /**
-     * Get call history by user ID
+     * Get call history by user ID (ordered by latest first)
      */
     public List<CallHistoryResponse> getCallHistoryByUserId(Long userId) {
         log.info("Fetching call history for user ID: {}", userId);
         return callHistoryRepository.findByIdUser(userId).stream()
+                .sorted((a, b) -> {
+                    // Sort by createTime descending (latest first)
+                    if (a.getCreateTime() == null && b.getCreateTime() == null) return 0;
+                    if (a.getCreateTime() == null) return 1;
+                    if (b.getCreateTime() == null) return -1;
+                    return b.getCreateTime().compareTo(a.getCreateTime());
+                })
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Get call history by aparty (calling party)
+     * Get call history by aparty (calling party) (ordered by latest first)
      */
     public List<CallHistoryResponse> getCallHistoryByAparty(String aparty) {
         log.info("Fetching call history for aparty: {}", aparty);
         return callHistoryRepository.findByAparty(aparty).stream()
+                .sorted((a, b) -> {
+                    // Sort by createTime descending (latest first)
+                    if (a.getCreateTime() == null && b.getCreateTime() == null) return 0;
+                    if (a.getCreateTime() == null) return 1;
+                    if (b.getCreateTime() == null) return -1;
+                    return b.getCreateTime().compareTo(a.getCreateTime());
+                })
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Get call history by date range
+     * Get call history by date range (ordered by latest first)
      */
     public List<CallHistoryResponse> getCallHistoryByDateRange(LocalDateTime start, LocalDateTime end) {
         log.info("Fetching call history between {} and {}", start, end);
         return callHistoryRepository.findByCreateTimeBetween(start, end).stream()
+                .sorted((a, b) -> {
+                    // Sort by createTime descending (latest first)
+                    if (a.getCreateTime() == null && b.getCreateTime() == null) return 0;
+                    if (a.getCreateTime() == null) return 1;
+                    if (b.getCreateTime() == null) return -1;
+                    return b.getCreateTime().compareTo(a.getCreateTime());
+                })
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Get call history by status
+     * Get call history by status (ordered by latest first)
      */
     public List<CallHistoryResponse> getCallHistoryByStatus(String status) {
         log.info("Fetching call history with status: {}", status);
         return callHistoryRepository.findByStatus(status).stream()
+                .sorted((a, b) -> {
+                    // Sort by createTime descending (latest first)
+                    if (a.getCreateTime() == null && b.getCreateTime() == null) return 0;
+                    if (a.getCreateTime() == null) return 1;
+                    if (b.getCreateTime() == null) return -1;
+                    return b.getCreateTime().compareTo(a.getCreateTime());
+                })
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

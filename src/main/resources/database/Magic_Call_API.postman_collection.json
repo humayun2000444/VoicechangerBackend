@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "magic-call-complete-2025",
 		"name": "Magic Call API - Complete Collection",
-		"description": "Complete API with Authentication, User Management, User Details CRUD, Voice Processing, Call History Management, Top-Up System, and Admin Setup\n\n## Total Endpoints: 45\n- Authentication: 2 endpoints\n- Admin Setup: 2 endpoints\n- User Management: 9 endpoints\n- User Details: 8 endpoints\n- Voice Processing: 4 endpoints\n- Voice Types: 6 endpoints\n- Balance: 2 endpoints\n- Call History: 9 endpoints\n- Top-Up: 8 endpoints (User top-up with admin approval)\n\n## Features:\n- JWT-based authentication with BCrypt password encryption\n- Admin setup utility for creating/updating admin users\n- Role-based access control (ROLE_USER, ROLE_ADMIN)\n- Complete user CRUD operations (profile, admin management)\n- User details management (extended profile information)\n- Voice transformation (Male to Female, Female to Male, Robot)\n- User balance management (duration in seconds)\n- Call history and CDR management with FreeSWITCH integration\n- Top-up system with manual admin approval (60 sec per 3 BDT, minimum 20 BDT)\n- Automatic FreeSWITCH user provisioning with XML config\n- Transaction rollback on FreeSWITCH config failure\n- Enable/Disable user functionality\n\n## Error Codes:\n- USERNAME_EXISTS (409): Username already taken\n- INVALID_CREDENTIALS (401): Invalid username or password\n- INVALID_REQUEST (400): Missing or invalid request data\n- FREESWITCH_CONFIG_FAILED (500): FreeSWITCH configuration creation failed\n- AUDIO_PROCESSING_FAILED (500): Audio processing error\n\n## Security Notes:\n- User registration automatically creates FreeSWITCH configuration\n- If FreeSWITCH config fails, user is NOT created (transaction rollback)\n- All endpoints except auth, setup, and voice processing require JWT token\n- Admin endpoints require ROLE_ADMIN authority\n- Users can only update their own profile (cannot change roles)\n- Admins can manage all users and change roles\n- Deleting a user also deletes associated FreeSWITCH configuration\n- Top-up requests start as PENDING and require admin approval\n- Upon approval, balance is automatically added to user account\n- Admin Setup endpoints are public (no authentication required) for initial setup",
+		"description": "Complete API with Authentication, User Management, User Details CRUD, Voice Processing, Call History Management, Voice Purchase System, Top-Up System, and Admin Setup\n\n## Total Endpoints: 57\n- Authentication: 2 endpoints\n- Admin Setup: 2 endpoints\n- User Management: 9 endpoints\n- User Details: 9 endpoints (NEW - Set selected voice type)\n- Voice Processing: 4 endpoints\n- Voice Types: 6 endpoints\n- Balance: 2 endpoints\n- Call History: 9 endpoints\n- Voice Purchase: 11 endpoints (NEW - Trial system, admin approval workflow, separate payment tracking)\n- Top-Up: 8 endpoints (User top-up with admin approval)\n\n## Features:\n- JWT-based authentication with BCrypt password encryption\n- Admin setup utility for creating/updating admin users\n- Role-based access control (ROLE_USER, ROLE_ADMIN)\n- Complete user CRUD operations (profile, admin management)\n- User details management (extended profile information, default voice selection)\n- Voice transformation (Male to Female, Female to Male, Robot, Child)\n- User balance management (duration in seconds)\n- Voice type purchase system with 3-day trial and admin approval\n- Call history and CDR management with FreeSWITCH integration\n- Top-up system with manual admin approval (60 sec per 3 BDT, minimum 20 BDT)\n- Automatic FreeSWITCH user provisioning with XML config\n- Transaction rollback on FreeSWITCH config failure\n- Enable/Disable user functionality\n\n## Error Codes:\n- USERNAME_EXISTS (409): Username already taken\n- INVALID_CREDENTIALS (401): Invalid username or password\n- INVALID_REQUEST (400): Missing or invalid request data\n- FREESWITCH_CONFIG_FAILED (500): FreeSWITCH configuration creation failed\n- AUDIO_PROCESSING_FAILED (500): Audio processing error\n\n## Voice Type System:\n- Voice Type 1 (Male Voice - 901): Purchasable with admin approval\n- Voice Type 2 (Female Voice - 902): Purchasable with admin approval\n- Voice Type 3 (Child Voice - 903): 3-day trial on signup, then purchasable with admin approval\n- Voice Type 4 (Robot Voice - 904): Free forever on signup\n\n## Security Notes:\n- User registration automatically creates FreeSWITCH configuration\n- If FreeSWITCH config fails, user is NOT created (transaction rollback)\n- New users automatically get voice type 3 (3-day trial) and voice type 4 (permanent)\n- Voice purchase requests require admin approval before granting access\n- Users can select their default voice type from available voices\n- All endpoints except auth, setup, and voice processing require JWT token\n- Admin endpoints require ROLE_ADMIN authority\n- Users can only update their own profile (cannot change roles)\n- Admins can manage all users and change roles\n- Deleting a user also deletes associated FreeSWITCH configuration\n- Top-up requests start as PENDING and require admin approval\n- Upon approval, balance is automatically added to user account\n- Admin Setup endpoints are public (no authentication required) for initial setup",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -202,7 +202,7 @@
 		},
 		{
 			"name": "User Details Management",
-			"description": "CRUD operations for user details. Requires JWT authentication.",
+			"description": "CRUD operations for user details, including selecting default voice type. Requires JWT authentication.",
 			"item": [
 				{
 					"name": "Create My User Details",
@@ -254,6 +254,14 @@
 						"method": "DELETE",
 						"url": {"raw": "{{base_url}}/api/user-details/my", "host": ["{{base_url}}"], "path": ["api", "user-details", "my"]},
 						"description": "Delete user details for the authenticated user."
+					}
+				},
+				{
+					"name": "Set Selected Voice Type",
+					"request": {
+						"method": "PUT",
+						"url": {"raw": "{{base_url}}/api/user-details/my/selected-voice/3", "host": ["{{base_url}}"], "path": ["api", "user-details", "my", "selected-voice", "3"]},
+						"description": "Set the default voice type for the authenticated user. The user must have active access to the voice type. **Requires authentication.**\n\nPath Parameter:\n- voiceTypeId: ID of the voice type to set as default (must be an active voice type for the user)"
 					}
 				},
 				{
@@ -456,6 +464,106 @@
 						"method": "GET",
 						"url": {"raw": "{{base_url}}/api/balance/user/1", "host": ["{{base_url}}"], "path": ["api", "balance", "user", "1"]},
 						"description": "Get balance for any user by ID. **Requires ROLE_ADMIN.**"
+					}
+				}
+			]
+		},
+		{
+			"name": "Voice Purchase",
+			"description": "Voice type purchase system with 3-day trial and admin approval workflow.\n\n**Auto-Assignment on Registration:**\n- Voice Type 3 (Child Voice): 3-day trial\n- Voice Type 4 (Robot Voice): Free forever\n\n**Purchase Workflow:**\n1. User requests to purchase a voice type (status: pending)\n2. Admin reviews and approves/rejects the request\n3. Upon approval, user gets permanent access to the voice type\n\n**Purchasable Voice Types:**\n- Voice Type 1 (Male Voice)\n- Voice Type 2 (Female Voice)\n- Voice Type 3 (Child Voice) - after trial expires",
+			"item": [
+				{
+					"name": "Purchase Voice Type",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"idVoiceType\": 1,\n  \"transactionMethod\": \"bkash\",\n  \"tnxId\": \"TXN123456789\",\n  \"subscriptionType\": \"monthly\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{base_url}}/api/voice-purchase", "host": ["{{base_url}}"], "path": ["api", "voice-purchase"]},
+						"description": "Request to purchase a voice type with payment details and subscription period. **Requires authentication.** Default price: 50 BDT per voice type.\n\n**Important:** This creates a PENDING purchase request. Admin approval is required to grant access. Payment info is stored directly in the voice_purchases table.\n\n**Request body:**\n- idVoiceType: ID of the voice type to purchase (1, 2, or 3)\n- transactionMethod: Payment method (\"bkash\", \"nagad\", or \"rocket\")\n- tnxId: Transaction ID from mobile banking\n- subscriptionType: Subscription period (\"monthly\" or \"yearly\")\n\n**Expiry Calculation:**\n- Monthly subscription: Access expires after 1 month from purchase date\n- Yearly subscription: Access expires after 1 year from purchase date\n\n**Response:**\n- Status will be \"pending\" until admin approves\n- Payment info and subscription type stored in voice_purchases record\n- expiryDate calculated automatically based on subscriptionType\n- On approval, user gets access to the voice type until expiry date"
+					}
+				},
+				{
+					"name": "Get My Purchases",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "{{base_url}}/api/voice-purchase/my", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "my"]},
+						"description": "Get all voice type purchases for the authenticated user. **Requires authentication.**"
+					}
+				},
+				{
+					"name": "Get All Purchases (Admin)",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "{{base_url}}/api/voice-purchase", "host": ["{{base_url}}"], "path": ["api", "voice-purchase"]},
+						"description": "Get all voice type purchases. **Requires ROLE_ADMIN.**"
+					}
+				},
+				{
+					"name": "Get Purchases by Voice Type (Admin)",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "{{base_url}}/api/voice-purchase/voice-type/1", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "voice-type", "1"]},
+						"description": "Get all purchases for a specific voice type. **Requires ROLE_ADMIN.**"
+					}
+				},
+				{
+					"name": "Get My Voice Types",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "{{base_url}}/api/voice-purchase/my-voice-types", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "my-voice-types"]},
+						"description": "Get all voice types available to the authenticated user (both free and purchased). **Requires authentication.**"
+					}
+				},
+				{
+					"name": "Get Available Voice Types",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "{{base_url}}/api/voice-purchase/available", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "available"]},
+						"description": "Get voice types available for purchase. **Only returns voice types the user does NOT already have.** **Requires authentication.**\n\nThis endpoint filters out:\n- Voice types the user already purchased\n- Voice types auto-assigned (3 and 4)\n- Voice types with active trial access\n\nPerfect for showing a \"Buy Voice Types\" list in the UI."
+					}
+				},
+				{
+					"name": "Get My Active Voice Types",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "{{base_url}}/api/voice-purchase/my-active-voice-types", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "my-active-voice-types"]},
+						"description": "Get only active (non-expired) voice types for the authenticated user. Excludes expired trial voices. **Requires authentication.**"
+					}
+				},
+				{
+					"name": "Get Pending Purchases (Admin)",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "{{base_url}}/api/voice-purchase/pending", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "pending"]},
+						"description": "Get all pending voice purchase requests awaiting admin approval. **Requires ROLE_ADMIN.**"
+					}
+				},
+				{
+					"name": "Approve Purchase (Admin)",
+					"request": {
+						"method": "PUT",
+						"url": {"raw": "{{base_url}}/api/voice-purchase/1/approve", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "1", "approve"]},
+						"description": "Approve a pending voice purchase request and grant the user access to the voice type. **Requires ROLE_ADMIN.**\n\nUpdates purchase status from 'pending' to 'approved' and creates/updates voice-user mapping."
+					}
+				},
+				{
+					"name": "Reject Purchase (Admin)",
+					"request": {
+						"method": "PUT",
+						"url": {"raw": "{{base_url}}/api/voice-purchase/1/reject", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "1", "reject"]},
+						"description": "Reject a pending voice purchase request. User will NOT get access to the voice type. **Requires ROLE_ADMIN.**\n\nUpdates purchase status from 'pending' to 'rejected'."
+					}
+				},
+				{
+					"name": "Delete Purchase (Admin)",
+					"request": {
+						"method": "DELETE",
+						"url": {"raw": "{{base_url}}/api/voice-purchase/1", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "1"]},
+						"description": "Delete a voice purchase by ID. This also removes the voice-user mapping. **Requires ROLE_ADMIN.**"
 					}
 				}
 			]

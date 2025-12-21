@@ -69,6 +69,18 @@ public class UserDetailsController {
     }
 
     /**
+     * Set selected default voice type for logged-in user
+     */
+    @PutMapping("/my/selected-voice/{voiceTypeId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserDetailsResponse> setSelectedVoiceType(@PathVariable Long voiceTypeId) {
+        logger.info("Setting selected voice type to {} for logged-in user", voiceTypeId);
+        UserDetailsResponse response = userDetailsService.setSelectedVoiceType(voiceTypeId);
+        logger.info("Selected voice type set successfully");
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Get user details by ID (Admin only)
      */
     @GetMapping("/{id}")

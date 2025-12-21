@@ -1,6 +1,6 @@
 -- MySQL dump for magic_call database
 -- Database: magic_call
--- Backup Date: 2025-12-20
+-- Backup Date: 2025-12-21
 -- Server version: MySQL 8.0+
 
 -- Create database
@@ -10,6 +10,8 @@ USE `magic_call`;
 
 -- Drop tables if exists (for clean restore)
 DROP TABLE IF EXISTS `call_history`;
+DROP TABLE IF EXISTS `voice_purchases`;
+DROP TABLE IF EXISTS `voice_user_mapping`;
 DROP TABLE IF EXISTS `balances`;
 DROP TABLE IF EXISTS `transactions`;
 DROP TABLE IF EXISTS `voice_types`;
@@ -167,7 +169,51 @@ CREATE TABLE `call_history` (
 INSERT INTO `voice_types` (`id`, `voice_name`, `code`, `created_at`, `updated_at`) VALUES
 (1, 'Male Voice', '901', NOW(), NOW()),
 (2, 'Female Voice', '902', NOW(), NOW()),
-(3, 'Child Voice', '903', NOW(), NOW());
+(3, 'Child Voice', '903', NOW(), NOW()),
+(4, 'Robot Voice', '904', NOW(), NOW());
+
+-- Table structure for table `voice_user_mapping`
+CREATE TABLE `voice_user_mapping` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `id_user` BIGINT NOT NULL COMMENT 'User ID',
+  `id_voice_type` BIGINT NOT NULL COMMENT 'Voice Type ID',
+  `is_purchased` BIT(1) NOT NULL DEFAULT 0 COMMENT 'false = free (auto-assigned), true = purchased',
+  `assigned_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When voice type was assigned to user',
+  `trial_expiry_date` DATETIME(6) DEFAULT NULL COMMENT 'null = no trial (permanent), non-null = trial expires at this date',
+  `expiry_date` DATETIME(6) DEFAULT NULL COMMENT 'null = permanent access, non-null = subscription expires at this date',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_user_voice` (`id_user`, `id_voice_type`),
+  KEY `idx_id_user` (`id_user`),
+  KEY `idx_id_voice_type` (`id_voice_type`),
+  KEY `idx_trial_expiry` (`trial_expiry_date`),
+  KEY `idx_expiry` (`expiry_date`),
+  CONSTRAINT `FK_voice_user_mapping_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_voice_user_mapping_voice_type` FOREIGN KEY (`id_voice_type`) REFERENCES `voice_types` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Maps users to their assigned/purchased voice types';
+
+-- Table structure for table `voice_purchases`
+CREATE TABLE `voice_purchases` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `id_user` BIGINT NOT NULL COMMENT 'User ID who made the purchase',
+  `id_voice_type` BIGINT NOT NULL COMMENT 'Voice Type ID being purchased',
+  `id_transaction` BIGINT DEFAULT NULL COMMENT 'Reference to transaction (optional, for backward compatibility)',
+  `transaction_method` VARCHAR(50) DEFAULT NULL COMMENT 'Payment method: bkash, nagad, rocket',
+  `tnx_id` VARCHAR(100) DEFAULT NULL COMMENT 'Payment transaction ID from provider',
+  `subscription_type` VARCHAR(20) DEFAULT NULL COMMENT 'Subscription type: monthly, yearly',
+  `amount` DECIMAL(10,2) DEFAULT NULL COMMENT 'Purchase amount',
+  `purchase_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Purchase request date',
+  `expiry_date` DATETIME(6) DEFAULT NULL COMMENT 'When the subscription expires',
+  `status` VARCHAR(20) DEFAULT 'pending' COMMENT 'Purchase status: pending, approved, rejected',
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+  PRIMARY KEY (`id`),
+  KEY `idx_id_user` (`id_user`),
+  KEY `idx_id_voice_type` (`id_voice_type`),
+  KEY `idx_status` (`status`),
+  KEY `idx_purchase_date` (`purchase_date`),
+  KEY `idx_tnx_id` (`tnx_id`),
+  CONSTRAINT `FK_voice_purchases_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_voice_purchases_voice_type` FOREIGN KEY (`id_voice_type`) REFERENCES `voice_types` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Voice type purchase requests with admin approval workflow';
 
 -- Grant privileges to tbuser
 -- Note: Run these commands separately as MySQL root user

@@ -42,6 +42,13 @@ public class UserDetails {
     @Column(name = "profile_photo", length = 500)
     private String profilePhoto;
 
+    @Column(name = "selected_voice_type_id")
+    private Long selectedVoiceTypeId; // User's selected default voice type for calls
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "selected_voice_type_id", referencedColumnName = "id", insertable = false, updatable = false)
+    private VoiceType selectedVoiceType;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

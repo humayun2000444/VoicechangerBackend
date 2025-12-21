@@ -20,6 +20,7 @@ public class UserDetailsResponse {
     private String address;
     private String email;
     private String profilePhoto;
+    private Long selectedVoiceTypeId; // User's selected default voice type for calls
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
