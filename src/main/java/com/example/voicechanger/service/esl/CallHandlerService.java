@@ -64,14 +64,30 @@ public class CallHandlerService {
             return;
         }
 
-        String[] parts = userName.split("_");
-        if (parts.length < 3) {
-            log.warn("⚠️ Invalid userName format: {} (expected format: aParty_bParty_email)", userName);
-            return;
-        }
+        // Support both formats:
+        // 1. Simple BD phone number: "01789896378"
+        // 2. Complex format: "aParty_bParty_email"
+        String aParty, bParty, email;
 
-        String aParty = parts[0], bParty = parts[1], email = parts[2];
-        log.debug("📋 Parsed user data - A-Party={}, B-Party={}, Email={}", aParty, bParty, email);
+        if (userName.contains("_")) {
+            // Complex format with underscores
+            String[] parts = userName.split("_");
+            if (parts.length >= 3) {
+                aParty = parts[0];
+                bParty = parts[1];
+                email = parts[2];
+                log.debug("📋 Parsed complex format - A-Party={}, B-Party={}, Email={}", aParty, bParty, email);
+            } else {
+                log.warn("⚠️ Invalid userName format with underscores: {}", userName);
+                return;
+            }
+        } else {
+            // Simple BD phone number format
+            aParty = userName;  // Use phone number as aParty (username)
+            bParty = calledNumber;  // Called number as bParty
+            email = userName + "@magicall.local";  // Generate email from phone number
+            log.info("📱 BD phone number format detected - A-Party={}, B-Party={}, Email={}", aParty, bParty, email);
+        }
 
         // Extract source IP from headers (FreeSWITCH provides this in multiple variables)
         String sourceIp = headers.getOrDefault("variable_sip_received_ip",
@@ -149,7 +165,16 @@ public class CallHandlerService {
     }
 
     private void applyVoiceChanger(String uuid, String userName) {
-        String suffix = userName.substring(userName.lastIndexOf("_") + 1);
+        // Extract voice code suffix (last part after underscore, or use default)
+        String suffix = "904";  // Default: normal call, no voice changer
+
+        if (userName.contains("_")) {
+            // Extract suffix from complex format: "aParty_bParty_email_901"
+            suffix = userName.substring(userName.lastIndexOf("_") + 1);
+        } else {
+            // For simple BD phone numbers, default to normal call
+            log.debug("📱 Simple phone number format - using default voice mode (904) for {}", userName);
+        }
 
         switch (suffix) {
             case "901" -> {

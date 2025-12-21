@@ -11,15 +11,10 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDetailsResponse {
-    private Long idUserDetails;
-    private Long idUser;
-    private UserResponse user;
-    private String dateOfBirth;
-    private String gender;
-    private String address;
-    private String email;
-    private String profilePhoto;
+public class VoiceTypeResponse {
+    private Long id;
+    private String voiceName;
+    private String code;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

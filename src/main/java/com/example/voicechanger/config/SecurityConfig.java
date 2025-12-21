@@ -35,10 +35,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/setup/**").permitAll()
                         .requestMatchers("/api/process").permitAll()
                         .requestMatchers("/api/process-live").permitAll()
                         .requestMatchers("/api/voiceTest").permitAll()
                         .requestMatchers("/").permitAll()
+                        .requestMatchers("/setup.html").permitAll()
+                        .requestMatchers("/index.html").permitAll()
+                        .requestMatchers("/admin/**").permitAll()
+                        .requestMatchers("/css/**", "/js/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated()

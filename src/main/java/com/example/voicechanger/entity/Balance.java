@@ -5,20 +5,30 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_details")
+@Table(name = "balances")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDetails {
+public class Balance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_user_details")
-    private Long idUserDetails;
+    private Long id;
+
+    @Column(name = "purchase_amount", nullable = false)
+    private Long purchaseAmount; // Duration in seconds
+
+    @Column(name = "last_used_amount", nullable = false)
+    private Long lastUsedAmount; // Duration in seconds
+
+    @Column(name = "total_used_amount", nullable = false)
+    private Long totalUsedAmount; // Duration in seconds
+
+    @Column(name = "remain_amount", nullable = false)
+    private Long remainAmount; // Duration in seconds
 
     @Column(name = "id_user", nullable = false, unique = true)
     private Long idUser;
@@ -26,21 +36,6 @@ public class UserDetails {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_user", insertable = false, updatable = false)
     private User user;
-
-    @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;
-
-    @Column(length = 10)
-    private String gender;
-
-    @Column(length = 500)
-    private String address;
-
-    @Column(length = 100)
-    private String email;
-
-    @Column(name = "profile_photo", length = 500)
-    private String profilePhoto;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

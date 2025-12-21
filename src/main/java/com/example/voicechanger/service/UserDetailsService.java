@@ -2,6 +2,8 @@ package com.example.voicechanger.service;
 
 import com.example.voicechanger.dto.UserDetailsRequest;
 import com.example.voicechanger.dto.UserDetailsResponse;
+import com.example.voicechanger.dto.UserResponse;
+import com.example.voicechanger.entity.Role;
 import com.example.voicechanger.entity.User;
 import com.example.voicechanger.entity.UserDetails;
 import com.example.voicechanger.exception.InvalidRequestException;
@@ -35,18 +37,15 @@ public class UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new InvalidRequestException("User not found"));
 
-        if (user.getIdUserDetails() != null) {
+        if (userDetailsRepository.existsByIdUser(user.getId())) {
             throw new InvalidRequestException("User details already exist. Use update instead.");
         }
 
         UserDetails userDetails = new UserDetails();
+        userDetails.setIdUser(user.getId());
         mapRequestToEntity(request, userDetails);
 
         UserDetails savedDetails = userDetailsRepository.save(userDetails);
-
-        // Update user with user details ID
-        user.setIdUserDetails(savedDetails.getIdUserDetails());
-        userRepository.save(user);
 
         log.info("User details created for user: {}", username);
         return mapEntityToResponse(savedDetails);
@@ -60,11 +59,7 @@ public class UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new InvalidRequestException("User not found"));
 
-        if (user.getIdUserDetails() == null) {
-            throw new InvalidRequestException("User details not found");
-        }
-
-        UserDetails userDetails = userDetailsRepository.findById(user.getIdUserDetails())
+        UserDetails userDetails = userDetailsRepository.findByIdUser(user.getId())
                 .orElseThrow(() -> new InvalidRequestException("User details not found"));
 
         return mapEntityToResponse(userDetails);
@@ -98,12 +93,8 @@ public class UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new InvalidRequestException("User not found"));
 
-        if (user.getIdUserDetails() == null) {
-            throw new InvalidRequestException("User details not found. Create details first.");
-        }
-
-        UserDetails userDetails = userDetailsRepository.findById(user.getIdUserDetails())
-                .orElseThrow(() -> new InvalidRequestException("User details not found"));
+        UserDetails userDetails = userDetailsRepository.findByIdUser(user.getId())
+                .orElseThrow(() -> new InvalidRequestException("User details not found. Create details first."));
 
         mapRequestToEntity(request, userDetails);
         UserDetails updatedDetails = userDetailsRepository.save(userDetails);
@@ -136,13 +127,10 @@ public class UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new InvalidRequestException("User not found"));
 
-        if (user.getIdUserDetails() == null) {
-            throw new InvalidRequestException("User details not found");
-        }
+        UserDetails userDetails = userDetailsRepository.findByIdUser(user.getId())
+                .orElseThrow(() -> new InvalidRequestException("User details not found"));
 
-        userDetailsRepository.deleteById(user.getIdUserDetails());
-        user.setIdUserDetails(null);
-        userRepository.save(user);
+        userDetailsRepository.delete(userDetails);
 
         log.info("User details deleted for user: {}", username);
     }
@@ -155,14 +143,6 @@ public class UserDetailsService {
         if (!userDetailsRepository.existsById(id)) {
             throw new InvalidRequestException("User details not found with ID: " + id);
         }
-
-        // Remove reference from user
-        userRepository.findAll().forEach(user -> {
-            if (id.equals(user.getIdUserDetails())) {
-                user.setIdUserDetails(null);
-                userRepository.save(user);
-            }
-        });
 
         userDetailsRepository.deleteById(id);
         log.info("User details deleted for ID: {}", id);
@@ -193,8 +173,28 @@ public class UserDetailsService {
      * Map entity to response DTO
      */
     private UserDetailsResponse mapEntityToResponse(UserDetails entity) {
+        // Fetch the related user
+        User user = userRepository.findById(entity.getIdUser())
+                .orElseThrow(() -> new InvalidRequestException("Related user not found for user_details ID: " + entity.getIdUserDetails()));
+
+        // Map user to UserResponse
+        UserResponse userResponse = UserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .enabled(user.getEnabled())
+                .roles(user.getRoles().stream()
+                        .map(Role::getName)
+                        .collect(Collectors.toList()))
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
+
         return UserDetailsResponse.builder()
                 .idUserDetails(entity.getIdUserDetails())
+                .idUser(entity.getIdUser())
+                .user(userResponse)
                 .dateOfBirth(entity.getDateOfBirth() != null ? entity.getDateOfBirth().toString() : null)
                 .gender(entity.getGender())
                 .address(entity.getAddress())

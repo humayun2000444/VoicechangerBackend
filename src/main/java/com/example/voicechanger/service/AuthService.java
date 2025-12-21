@@ -36,6 +36,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final FreeSwitchConfigService freeSwitchConfigService;
+    private final BalanceService balanceService;
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {
@@ -86,6 +87,11 @@ public class AuthService {
         log.info("Creating FreeSWITCH configuration for user: {}", savedUser.getUsername());
         freeSwitchConfigService.createUserConfig(savedUser.getUsername());
         log.info("FreeSWITCH configuration created successfully for user: {}", savedUser.getUsername());
+
+        // Add 30-second welcome balance for new user
+        log.info("Adding 30-second welcome balance for user: {} (ID: {})", savedUser.getUsername(), savedUser.getId());
+        balanceService.addBalance(savedUser.getId(), 30L);
+        log.info("Welcome balance added successfully for user: {}", savedUser.getUsername());
 
         // Generate JWT token
         String token = jwtUtil.generateToken(savedUser);

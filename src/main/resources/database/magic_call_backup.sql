@@ -9,6 +9,12 @@ CREATE DATABASE IF NOT EXISTS `magic_call` DEFAULT CHARACTER SET utf8mb4 COLLATE
 USE `magic_call`;
 
 -- Drop tables if exists (for clean restore)
+DROP TABLE IF EXISTS `package_purchases`;
+DROP TABLE IF EXISTS `package_voice_types`;
+DROP TABLE IF EXISTS `balances`;
+DROP TABLE IF EXISTS `packages`;
+DROP TABLE IF EXISTS `transactions`;
+DROP TABLE IF EXISTS `voice_types`;
 DROP TABLE IF EXISTS `user_roles`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `user_details`;
@@ -17,6 +23,7 @@ DROP TABLE IF EXISTS `roles`;
 -- Table structure for table `user_details`
 CREATE TABLE `user_details` (
   `id_user_details` BIGINT NOT NULL AUTO_INCREMENT,
+  `id_user` BIGINT NOT NULL,
   `date_of_birth` DATE DEFAULT NULL,
   `gender` VARCHAR(10) DEFAULT NULL,
   `address` VARCHAR(500) DEFAULT NULL,
@@ -25,6 +32,7 @@ CREATE TABLE `user_details` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_user_details`),
+  UNIQUE KEY `UK_user_id` (`id_user`),
   KEY `idx_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -46,14 +54,15 @@ CREATE TABLE `users` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `enabled` TINYINT(1) NOT NULL DEFAULT '1',
-  `id_user_details` BIGINT DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_username` (`username`),
   KEY `idx_username` (`username`),
-  KEY `idx_created_at` (`created_at`),
-  KEY `FK_user_details` (`id_user_details`),
-  CONSTRAINT `FK_users_user_details` FOREIGN KEY (`id_user_details`) REFERENCES `user_details` (`id_user_details`) ON DELETE SET NULL
+  KEY `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Add foreign key to user_details after users table is created
+ALTER TABLE `user_details`
+  ADD CONSTRAINT `FK_user_details_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 -- Table structure for table `user_roles` (junction table)
 CREATE TABLE `user_roles` (
@@ -71,24 +80,139 @@ INSERT INTO `roles` (`id`, `name`) VALUES
 (2, 'ROLE_USER');
 
 -- Sample data (optional - for testing purposes)
--- Password for test users: 'password123' (BCrypt encrypted: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy)
+-- Password for admin: 'admin123' (BCrypt encrypted: $2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7q5kQjL86)
+-- Password for testuser: 'password123' (BCrypt encrypted: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy)
 -- Note: Use the signup API endpoint to create real users with properly encrypted passwords
 -- ADMIN users must be created manually via database (cannot register through API)
 
--- Uncomment below to insert sample users
-/*
--- Insert sample users
+-- Insert sample users (enabled by default)
 INSERT INTO `users` (`id`, `username`, `password`, `first_name`, `last_name`, `created_at`, `updated_at`, `enabled`)
 VALUES
-(1, 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Admin', 'User', NOW(), NOW(), 1),
+(1, 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7q5kQjL86', 'Admin', 'User', NOW(), NOW(), 1),
 (2, 'testuser', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Test', 'User', NOW(), NOW(), 1);
 
 -- Assign roles to users
--- Admin user gets ROLE_ADMIN
-INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES (1, 1);
+-- Admin user gets both ROLE_ADMIN and ROLE_USER
+INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES (1, 1), (1, 2);
 -- Test user gets ROLE_USER
 INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES (2, 2);
-*/
+
+-- Table structure for table `voice_types`
+CREATE TABLE `voice_types` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `voice_name` VARCHAR(100) NOT NULL,
+  `code` VARCHAR(10) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_voice_code` (`code`),
+  KEY `idx_voice_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for table `transactions`
+CREATE TABLE `transactions` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `id_user` BIGINT NOT NULL COMMENT 'User ID who made the transaction',
+  `transaction_method` VARCHAR(50) NOT NULL COMMENT 'Payment method: bKash, Nagad, Rocket, etc.',
+  `amount` DECIMAL(10,2) NOT NULL COMMENT 'Transaction amount in BDT',
+  `tnx_id` VARCHAR(100) NOT NULL COMMENT 'Unique transaction ID from payment provider',
+  `date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Transaction creation date',
+  `status` VARCHAR(20) DEFAULT 'PENDING' COMMENT 'Transaction status: PENDING, SUCCESS, FAILED',
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_tnx_id` (`tnx_id`),
+  KEY `idx_tnx_id` (`tnx_id`),
+  KEY `idx_date` (`date`),
+  KEY `idx_status` (`status`),
+  KEY `idx_id_user` (`id_user`),
+  CONSTRAINT `FK_transactions_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Top-up transactions with manual admin approval';
+
+-- Table structure for table `packages`
+CREATE TABLE `packages` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `package_name` VARCHAR(200) NOT NULL,
+  `duration` BIGINT NOT NULL COMMENT 'Duration in seconds',
+  `created_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expire_date` DATE NOT NULL,
+  `price` DECIMAL(10,2) NOT NULL,
+  `vat` DECIMAL(10,2) NOT NULL,
+  `total_amount` DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_package_name` (`package_name`),
+  KEY `idx_expire_date` (`expire_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for table `package_voice_types` (junction table)
+CREATE TABLE `package_voice_types` (
+  `package_id` BIGINT NOT NULL,
+  `voice_type_id` BIGINT NOT NULL,
+  PRIMARY KEY (`package_id`, `voice_type_id`),
+  KEY `FK_voice_type_id` (`voice_type_id`),
+  CONSTRAINT `FK_package_voice_types_package` FOREIGN KEY (`package_id`) REFERENCES `packages` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_package_voice_types_voice` FOREIGN KEY (`voice_type_id`) REFERENCES `voice_types` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for table `package_purchases`
+CREATE TABLE `package_purchases` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `purchase_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `purchase_amount` DECIMAL(10,2) NOT NULL,
+  `id_transaction` BIGINT DEFAULT NULL,
+  `id_user` BIGINT NOT NULL,
+  `id_package` BIGINT NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK_purchase_transaction` (`id_transaction`),
+  KEY `FK_purchase_user` (`id_user`),
+  KEY `FK_purchase_package` (`id_package`),
+  KEY `idx_purchase_date` (`purchase_date`),
+  CONSTRAINT `FK_package_purchases_transaction` FOREIGN KEY (`id_transaction`) REFERENCES `transactions` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `FK_package_purchases_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_package_purchases_package` FOREIGN KEY (`id_package`) REFERENCES `packages` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for table `balances`
+CREATE TABLE `balances` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `purchase_amount` BIGINT NOT NULL DEFAULT 0 COMMENT 'Total purchased duration in seconds',
+  `last_used_amount` BIGINT NOT NULL DEFAULT 0 COMMENT 'Last used duration in seconds',
+  `total_used_amount` BIGINT NOT NULL DEFAULT 0 COMMENT 'Total used duration in seconds',
+  `remain_amount` BIGINT NOT NULL DEFAULT 0 COMMENT 'Remaining duration in seconds',
+  `id_user` BIGINT NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_balance_user` (`id_user`),
+  CONSTRAINT `FK_balances_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for table `call_history`
+CREATE TABLE `call_history` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `aparty` VARCHAR(50) NOT NULL COMMENT 'Calling party (username)',
+  `bparty` VARCHAR(50) DEFAULT NULL COMMENT 'Called party',
+  `uuid` VARCHAR(100) NOT NULL UNIQUE COMMENT 'FreeSWITCH call UUID',
+  `source_ip` VARCHAR(50) DEFAULT NULL COMMENT 'Source IP address',
+  `create_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Call creation time',
+  `start_time` TIMESTAMP NULL DEFAULT NULL COMMENT 'Call answer time',
+  `end_time` TIMESTAMP NULL DEFAULT NULL COMMENT 'Call end time',
+  `duration` BIGINT NOT NULL DEFAULT 0 COMMENT 'Call duration in seconds',
+  `status` VARCHAR(20) DEFAULT NULL COMMENT 'Call status: RESERVED, ANSWERED, COMPLETED, REJECTED, FAILED',
+  `hangup_cause` VARCHAR(50) DEFAULT NULL COMMENT 'Hangup cause from FreeSWITCH',
+  `codec` VARCHAR(50) DEFAULT NULL COMMENT 'Audio codec used for the call',
+  `id_user` BIGINT DEFAULT NULL COMMENT 'User ID (FK to users table)',
+  PRIMARY KEY (`id`),
+  KEY `idx_aparty` (`aparty`),
+  KEY `idx_uuid` (`uuid`),
+  KEY `idx_create_time` (`create_time`),
+  KEY `idx_status` (`status`),
+  KEY `FK_call_history_user` (`id_user`),
+  CONSTRAINT `FK_call_history_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Call history and CDR records';
+
+-- Insert sample voice types
+INSERT INTO `voice_types` (`id`, `voice_name`, `code`, `created_at`, `updated_at`) VALUES
+(1, 'Male Voice', '901', NOW(), NOW()),
+(2, 'Female Voice', '902', NOW(), NOW()),
+(3, 'Child Voice', '903', NOW(), NOW());
 
 -- Grant privileges to tbuser
 -- Note: Run these commands separately as MySQL root user

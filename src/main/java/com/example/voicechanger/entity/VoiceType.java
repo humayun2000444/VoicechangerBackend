@@ -5,42 +5,24 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_details")
+@Table(name = "voice_types")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDetails {
+public class VoiceType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_user_details")
-    private Long idUserDetails;
+    private Long id;
 
-    @Column(name = "id_user", nullable = false, unique = true)
-    private Long idUser;
+    @Column(name = "voice_name", nullable = false, length = 100)
+    private String voiceName;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_user", insertable = false, updatable = false)
-    private User user;
-
-    @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;
-
-    @Column(length = 10)
-    private String gender;
-
-    @Column(length = 500)
-    private String address;
-
-    @Column(length = 100)
-    private String email;
-
-    @Column(name = "profile_photo", length = 500)
-    private String profilePhoto;
+    @Column(nullable = false, unique = true, length = 10)
+    private String code;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -44,11 +44,7 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Boolean enabled = true;
 
-    @Column(name = "id_user_details")
-    private Long idUserDetails;
-
-    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    @JoinColumn(name = "id_user_details", insertable = false, updatable = false)
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private com.example.voicechanger.entity.UserDetails details;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
