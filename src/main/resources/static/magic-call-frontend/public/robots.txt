@@ -1,0 +1,16 @@
+# Magic Call Admin Panel - Robots.txt
+# This is an admin panel and should not be indexed
+
+User-agent: *
+Disallow: /
+
+# Allow only static assets
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.svg$
+
+Sitemap: http://192.168.0.103:3000/sitemap.xml
