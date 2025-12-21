@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Phone, Lock, User, ArrowRight } from "lucide-react"
+import { Phone, Lock, User, ArrowRight, Mic, Shield, Zap, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -45,44 +45,79 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-800 p-12 flex-col justify-between text-white">
-        <div>
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-pink-600 p-12 flex-col justify-between text-white relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl"></div>
+
+        <div className="relative z-10">
           <div className="flex items-center gap-3 mb-12">
-            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm border border-white/30">
               <Phone className="h-10 w-10" />
             </div>
             <div>
               <h1 className="text-3xl font-bold">Magic Call</h1>
-              <p className="text-blue-100">Voice Changer System</p>
+              <p className="text-purple-100">Admin Panel</p>
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 mb-12">
             <h2 className="text-4xl font-bold leading-tight">
-              Complete Management<br />Platform for Your<br />Voice Changer Business
+              Complete Control<br />Over Your Voice<br />Changer Platform
             </h2>
-            <p className="text-xl text-blue-100">
-              Manage packages, users, voice types, and transactions all in one place
+            <p className="text-xl text-purple-100">
+              Manage users, voice types, purchases, and call history all in one powerful dashboard
             </p>
+          </div>
+
+          {/* Features */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="bg-purple-500/30 p-2 rounded-lg">
+                <Mic className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="font-semibold">Voice Management</div>
+                <div className="text-sm text-purple-100">Manage all voice types and filters</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="bg-pink-500/30 p-2 rounded-lg">
+                <Shield className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="font-semibold">Secure Access</div>
+                <div className="text-sm text-purple-100">Role-based authentication with JWT</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="bg-purple-500/30 p-2 rounded-lg">
+                <Zap className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="font-semibold">Real-time Analytics</div>
+                <div className="text-sm text-purple-100">Track users, purchases & call history</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="relative z-10 grid grid-cols-2 gap-4">
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
             <div className="text-3xl font-bold mb-1">40+</div>
-            <div className="text-sm text-blue-100">API Endpoints</div>
+            <div className="text-sm text-purple-100">API Endpoints</div>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
             <div className="text-3xl font-bold mb-1">JWT</div>
-            <div className="text-sm text-blue-100">Secure Auth</div>
+            <div className="text-sm text-purple-100">Secure Auth</div>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-            <div className="text-3xl font-bold mb-1">10</div>
-            <div className="text-sm text-blue-100">DB Tables</div>
+            <div className="text-3xl font-bold mb-1">10+</div>
+            <div className="text-sm text-purple-100">DB Tables</div>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
             <div className="text-3xl font-bold mb-1">RBAC</div>
-            <div className="text-sm text-blue-100">Role Access</div>
+            <div className="text-sm text-purple-100">Role Access</div>
           </div>
         </div>
       </div>
@@ -90,22 +125,38 @@ export default function LoginPage() {
       {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
+          {/* Back to Home Link */}
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => router.push("/")}
+              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+          </div>
+
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <div className="bg-blue-600 p-3 rounded-xl">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-xl">
               <Phone className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Magic Call</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Magic Call
+              </h1>
               <p className="text-gray-600">Admin Panel</p>
             </div>
           </div>
 
           <Card className="shadow-xl border-0">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-3xl font-bold text-center">Welcome Back</CardTitle>
+              <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Admin Login
+              </CardTitle>
               <CardDescription className="text-center text-base">
-                Sign in to your admin account
+                Sign in to access the admin dashboard
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -125,12 +176,12 @@ export default function LoginPage() {
                     <Input
                       id="username"
                       type="text"
-                      placeholder="admin"
+                      placeholder="Enter your username"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       required
                       autoComplete="username"
-                      className="pl-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-10 h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                     />
                   </div>
                 </div>
@@ -144,19 +195,19 @@ export default function LoginPage() {
                     <Input
                       id="password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       autoComplete="current-password"
-                      className="pl-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-10 h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                     />
                   </div>
                 </div>
 
                 <Button
                   type="submit"
-                  className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700"
+                  className="w-full h-12 text-base font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                   disabled={loading}
                 >
                   {loading ? (
@@ -177,17 +228,13 @@ export default function LoginPage() {
 
                 <div className="text-center pt-2">
                   <p className="text-sm text-gray-600 flex items-center justify-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    Secure admin access only
+                    <Shield className="h-4 w-4 text-purple-600" />
+                    Secure admin access with role-based authentication
                   </p>
                 </div>
               </form>
             </CardContent>
           </Card>
-
-          <p className="text-center text-sm text-gray-600 mt-6">
-            Default credentials: <span className="font-semibold">admin</span> / <span className="font-semibold">admin123</span>
-          </p>
         </div>
       </div>
     </div>

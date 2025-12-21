@@ -14,34 +14,66 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Magic Call - Voice Changer Admin Panel",
-    template: "%s | Magic Call Admin"
+    default: "Magic Call - Transform Your Voice in Real-Time During Calls | AI Voice Changer",
+    template: "%s | Magic Call"
   },
-  description: "Complete management system for Magic Call Voice Changer platform. Manage packages, users, voice types, and purchase transactions with our comprehensive admin panel.",
-  keywords: ["voice changer", "admin panel", "magic call", "voice types", "package management", "FreeSWITCH", "VoIP", "call management"],
+  description: "Change your voice during calls with Magic Call - the ultimate AI-powered voice changer app. Try premium voice filters like Alien, Child, Robot & more. 3 days free trial. Download for Android & iOS!",
+  keywords: [
+    "voice changer",
+    "magic call",
+    "voice changer app",
+    "real-time voice changer",
+    "AI voice transformer",
+    "voice effects",
+    "call voice modifier",
+    "prank call app",
+    "voice filter app",
+    "alien voice",
+    "child voice",
+    "robot voice",
+    "voice changer for calls",
+    "live voice changer",
+    "free voice changer",
+    "voice changer Bangladesh",
+    "voice modulator",
+    "call effects app"
+  ],
   authors: [{ name: "Magic Call Team" }],
   creator: "Magic Call",
   publisher: "Magic Call",
   robots: {
-    index: false, // Admin panel should not be indexed
-    follow: false,
+    index: true, // Public landing page should be indexed
+    follow: true,
     googleBot: {
-      index: false,
-      follow: false,
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "http://localhost:3000",
-    title: "Magic Call - Voice Changer Admin Panel",
-    description: "Complete management system for Magic Call Voice Changer platform",
-    siteName: "Magic Call Admin",
+    title: "Magic Call - Transform Your Voice in Real-Time | AI Voice Changer App",
+    description: "Download Magic Call and change your voice during calls with amazing AI effects. Try Alien, Child, Robot voices & more. 3 days FREE trial! Available for Android & iOS.",
+    siteName: "Magic Call",
+    images: [
+      {
+        url: "/og-image.png", // TODO: Add actual OG image
+        width: 1200,
+        height: 630,
+        alt: "Magic Call - AI Voice Changer App",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Magic Call - Voice Changer Admin Panel",
-    description: "Complete management system for Magic Call Voice Changer platform",
+    title: "Magic Call - Transform Your Voice in Real-Time | AI Voice Changer",
+    description: "Download Magic Call and change your voice during calls with amazing AI effects. 3 days FREE trial! Available for Android & iOS.",
+    images: ["/og-image.png"], // TODO: Add actual Twitter card image
+    creator: "@magiccall",
   },
   viewport: {
     width: "device-width",
@@ -50,8 +82,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.json",
+  alternates: {
+    canonical: "http://localhost:3000",
+  },
+  category: "Entertainment",
 };
 
 export default function RootLayout({
@@ -68,6 +105,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>
