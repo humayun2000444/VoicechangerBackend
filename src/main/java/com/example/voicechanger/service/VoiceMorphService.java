@@ -15,13 +15,13 @@ public class VoiceMorphService {
     }
 
 
-    public String setVoiceByEmail(String email, String code) {
+    public String setVoiceByUsername(String username, String code) {
         try {
-            // Find B-Leg UUID from active bridges using event headers
-            String bLegUuid = callHandlerService.findBLegUuidByEmail(email);
+            // Find B-Leg UUID from active bridges using username (BD phone number)
+            String bLegUuid = callHandlerService.findBLegUuidByUsername(username);
 
             if (bLegUuid == null) {
-                return "No active call found for email: " + email;
+                return "No active call found for username: " + username;
             }
 
             return executeVoiceCommand(bLegUuid, code);

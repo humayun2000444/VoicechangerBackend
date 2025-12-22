@@ -5,6 +5,7 @@ import { DashboardLayout } from '@/components/DashboardLayout'
 import { api } from '@/lib/api'
 import { TopUpResponse } from '@/types'
 import { format } from 'date-fns'
+import { Wallet, TrendingUp, CheckCircle, XCircle, Clock, RefreshCw, Info, Trash2 } from 'lucide-react'
 
 export default function TopUpPage() {
   const [topups, setTopups] = useState<TopUpResponse[]>([])
@@ -126,8 +127,11 @@ export default function TopUpPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg text-gray-600">Loading top-up requests...</div>
+        <div className="flex justify-center items-center h-96">
+          <div className="text-center">
+            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-purple-600 border-r-transparent mb-4"></div>
+            <p className="text-lg text-gray-600 font-medium">Loading top-up requests...</p>
+          </div>
         </div>
       </DashboardLayout>
     )
@@ -135,226 +139,232 @@ export default function TopUpPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Top-Up Management</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Manage user top-up requests and approve/reject transactions
-          </p>
-        </div>
-        <button
-          onClick={fetchTopUps}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Refresh
-        </button>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-          <div className="text-sm font-medium text-gray-600">Total Requests</div>
-          <div className="mt-2 text-3xl font-bold text-gray-900">{topups.length}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
-          <div className="text-sm font-medium text-gray-600">Pending</div>
-          <div className="mt-2 text-3xl font-bold text-yellow-600">{pendingCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-          <div className="text-sm font-medium text-gray-600">Approved</div>
-          <div className="mt-2 text-3xl font-bold text-green-600">{successCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-          <div className="text-sm font-medium text-gray-600">Rejected</div>
-          <div className="mt-2 text-3xl font-bold text-red-600">{failedCount}</div>
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="border-b border-gray-200">
-          <nav className="flex -mb-px">
-            {['ALL', 'PENDING', 'SUCCESS', 'FAILED'].map((status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  statusFilter === status
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {status}
-                {status !== 'ALL' && (
-                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-200">
-                    {status === 'PENDING' && pendingCount}
-                    {status === 'SUCCESS' && successCount}
-                    {status === 'FAILED' && failedCount}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Top-Up Management
+            </h1>
+            <p className="mt-2 text-gray-600 flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Manage user top-up requests and approve/reject transactions
+            </p>
+          </div>
+          <button
+            onClick={fetchTopUps}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 font-semibold"
+          >
+            <RefreshCw className="h-5 w-5" />
+            Refresh
+          </button>
         </div>
 
-        {/* Top-Up Requests Table */}
-        <div className="overflow-x-auto">
-          {filteredTopups.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              No top-up requests found
+        {/* Error Message */}
+        {error && (
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-xl shadow-md">
+            <p className="font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl shadow-lg p-6 border-0 hover:shadow-xl transition-all transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-purple-500 p-3 rounded-xl shadow-lg">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
             </div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount (BDT)
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Duration
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Payment Method
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Transaction ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTopups.map((topup) => (
-                  <tr key={topup.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{topup.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {topup.user?.username || `User #${topup.idUser}`}
-                      </div>
-                      {topup.user && (
-                        <div className="text-sm text-gray-500">
-                          {topup.user.firstName} {topup.user.lastName}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-gray-900">
-                        ৳{topup.amount.toFixed(2)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-blue-600">
-                        {formatDuration(topup.durationInSeconds)}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        ({topup.durationInSeconds} seconds)
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {topup.transactionMethod}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-mono text-gray-700">
-                        {topup.tnxId}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {format(new Date(topup.date), 'MMM dd, yyyy')}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {format(new Date(topup.date), 'hh:mm a')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusColor(
-                          topup.status
-                        )}`}
-                      >
-                        {topup.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      {topup.status === 'PENDING' && (
-                        <>
-                          <button
-                            onClick={() => handleApprove(topup.id)}
-                            disabled={processingId === topup.id}
-                            className="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {processingId === topup.id ? 'Processing...' : 'Approve'}
-                          </button>
-                          <span className="text-gray-300">|</span>
-                          <button
-                            onClick={() => handleReject(topup.id)}
-                            disabled={processingId === topup.id}
-                            className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Reject
-                          </button>
-                          <span className="text-gray-300">|</span>
-                        </>
-                      )}
-                      <button
-                        onClick={() => handleDelete(topup.id)}
-                        disabled={processingId === topup.id}
-                        className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Delete
-                      </button>
-                    </td>
+            <p className="text-sm font-medium text-gray-600 mb-1">Total Requests</p>
+            <p className="text-3xl font-bold text-purple-600">{topups.length}</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl shadow-lg p-6 border-0 hover:shadow-xl transition-all transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-yellow-500 p-3 rounded-xl shadow-lg">
+                <Clock className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Pending</p>
+            <p className="text-3xl font-bold text-yellow-600">{pendingCount}</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow-lg p-6 border-0 hover:shadow-xl transition-all transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-green-500 p-3 rounded-xl shadow-lg">
+                <CheckCircle className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Approved</p>
+            <p className="text-3xl font-bold text-green-600">{successCount}</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl shadow-lg p-6 border-0 hover:shadow-xl transition-all transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-red-500 p-3 rounded-xl shadow-lg">
+                <XCircle className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Rejected</p>
+            <p className="text-3xl font-bold text-red-600">{failedCount}</p>
+          </div>
+        </div>
+
+        {/* Filter Tabs & Table */}
+        <div className="bg-white rounded-2xl shadow-xl border-0 overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-1">
+            <nav className="flex gap-2 p-2">
+              {['ALL', 'PENDING', 'SUCCESS', 'FAILED'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    statusFilter === status
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                      : 'bg-white text-gray-600 hover:bg-gray-50 hover:shadow-md'
+                  }`}
+                >
+                  {status}
+                  {status !== 'ALL' && (
+                    <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                      statusFilter === status ? 'bg-white/20' : 'bg-purple-100 text-purple-700'
+                    }`}>
+                      {status === 'PENDING' && pendingCount}
+                      {status === 'SUCCESS' && successCount}
+                      {status === 'FAILED' && failedCount}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            {filteredTopups.length === 0 ? (
+              <div className="text-center py-16">
+                <Wallet className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg font-medium">No top-up requests found</p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Duration</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Payment</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Transaction ID</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-
-      {/* Info Panel */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {filteredTopups.map((topup) => (
+                    <tr key={topup.id} className="hover:bg-purple-50/30 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-bold text-purple-600">#{topup.id}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-gray-900">
+                          {topup.user?.username || `User #${topup.idUser}`}
+                        </div>
+                        {topup.user && (
+                          <div className="text-xs text-gray-500">
+                            {topup.user.firstName} {topup.user.lastName}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-base font-bold text-gray-900">৳{topup.amount.toFixed(2)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-purple-600">{formatDuration(topup.durationInSeconds)}</div>
+                        <div className="text-xs text-gray-500">({topup.durationInSeconds}s)</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-gray-700 uppercase">{topup.transactionMethod}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-mono text-gray-600">{topup.tnxId}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{format(new Date(topup.date), 'MMM dd, yyyy')}</div>
+                        <div className="text-xs text-gray-500">{format(new Date(topup.date), 'hh:mm a')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1.5 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusColor(topup.status)}`}>
+                          {topup.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        {topup.status === 'PENDING' && (
+                          <>
+                            <button
+                              onClick={() => handleApprove(topup.id)}
+                              disabled={processingId === topup.id}
+                              className="text-green-600 hover:text-green-800 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              {processingId === topup.id ? 'Processing...' : 'Approve'}
+                            </button>
+                            <span className="text-gray-300">|</span>
+                            <button
+                              onClick={() => handleReject(topup.id)}
+                              disabled={processingId === topup.id}
+                              className="text-red-600 hover:text-red-800 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              Reject
+                            </button>
+                            <span className="text-gray-300">|</span>
+                          </>
+                        )}
+                        <button
+                          onClick={() => handleDelete(topup.id)}
+                          disabled={processingId === topup.id}
+                          className="text-red-600 hover:text-red-800 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-          <div className="ml-3 flex-1">
-            <h3 className="text-sm font-medium text-blue-800">Top-Up Information</h3>
-            <div className="mt-2 text-sm text-blue-700">
-              <ul className="list-disc list-inside space-y-1">
-                <li><strong>Rate:</strong> 60 seconds per 3 BDT</li>
-                <li><strong>Minimum:</strong> 20 BDT</li>
-                <li><strong>Workflow:</strong> User submits request → Admin reviews → Approve/Reject → Balance updated automatically</li>
-                <li><strong>Note:</strong> Approving a request will automatically add the calculated duration to the user's balance</li>
-              </ul>
+        </div>
+
+        {/* Info Panel */}
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-500 rounded-xl p-6 shadow-md">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <Info className="h-6 w-6 text-purple-600" />
+            </div>
+            <div className="ml-4 flex-1">
+              <h3 className="text-lg font-bold text-purple-900 mb-3">Top-Up Information</h3>
+              <div className="text-sm text-purple-800 space-y-2">
+                <div className="flex items-start gap-2">
+                  <span className="font-bold min-w-[120px]">Rate:</span>
+                  <span>60 seconds per 3 BDT</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-bold min-w-[120px]">Minimum:</span>
+                  <span>20 BDT</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-bold min-w-[120px]">Workflow:</span>
+                  <span>User submits request → Admin reviews → Approve/Reject → Balance updated automatically</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-bold min-w-[120px]">Note:</span>
+                  <span>Approving a request will automatically add the calculated duration to the user's balance</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
     </DashboardLayout>
   )

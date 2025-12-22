@@ -31,4 +31,10 @@ public interface VoiceUserMappingRepository extends JpaRepository<VoiceUserMappi
            "AND vum.trialExpiryDate IS NOT NULL AND vum.trialExpiryDate <= :currentTime " +
            "AND vum.isPurchased = false")
     List<VoiceUserMapping> findExpiredTrialsByIdUser(@Param("idUser") Long idUser, @Param("currentTime") LocalDateTime currentTime);
+
+    // Find all mappings with user and voiceType eagerly fetched
+    @Query("SELECT vum FROM VoiceUserMapping vum " +
+           "LEFT JOIN FETCH vum.user " +
+           "LEFT JOIN FETCH vum.voiceType")
+    List<VoiceUserMapping> findAllWithUserAndVoiceType();
 }

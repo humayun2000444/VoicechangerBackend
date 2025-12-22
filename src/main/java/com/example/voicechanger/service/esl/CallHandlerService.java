@@ -1,11 +1,13 @@
 package com.example.voicechanger.service.esl;
 
+import com.example.voicechanger.service.VoiceUserMappingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,16 +19,19 @@ public class CallHandlerService {
     private final TalkTimeService talkTimeService;
     private final CallTransferService callTransferService;
     private final EslService eslService;
+    private final VoiceUserMappingService voiceUserMappingService;
 
     // Cache to store active bridge information with event headers
     private final Map<String, Map<String, String>> activeBridges = new ConcurrentHashMap<>();
 
     public CallHandlerService(TalkTimeService talkTimeService,
                               CallTransferService callTransferService,
-                              EslService eslService) {
+                              EslService eslService,
+                              VoiceUserMappingService voiceUserMappingService) {
         this.talkTimeService = talkTimeService;
         this.callTransferService = callTransferService;
         this.eslService = eslService;
+        this.voiceUserMappingService = voiceUserMappingService;
     }
 
     public void handleBridge(Map<String, String> headers) {
@@ -64,30 +69,15 @@ public class CallHandlerService {
             return;
         }
 
-        // Support both formats:
-        // 1. Simple BD phone number: "01789896378"
-        // 2. Complex format: "aParty_bParty_email"
-        String aParty, bParty, email;
+        // userName is always a Simple BD phone number: "01789896378"
+        String aParty = userName;  // Use phone number as aParty (username)
+        String bParty = calledNumber;  // Called number as bParty
 
-        if (userName.contains("_")) {
-            // Complex format with underscores
-            String[] parts = userName.split("_");
-            if (parts.length >= 3) {
-                aParty = parts[0];
-                bParty = parts[1];
-                email = parts[2];
-                log.debug("📋 Parsed complex format - A-Party={}, B-Party={}, Email={}", aParty, bParty, email);
-            } else {
-                log.warn("⚠️ Invalid userName format with underscores: {}", userName);
-                return;
-            }
-        } else {
-            // Simple BD phone number format
-            aParty = userName;  // Use phone number as aParty (username)
-            bParty = calledNumber;  // Called number as bParty
-            email = userName + "@magicall.local";  // Generate email from phone number
-            log.info("📱 BD phone number format detected - A-Party={}, B-Party={}, Email={}", aParty, bParty, email);
-        }
+        log.info("📱 BD phone number format - A-Party={}, B-Party={}", aParty, bParty);
+
+        // Get available voice codes for this user from HashMap
+        List<String> availableVoiceCodes = voiceUserMappingService.getVoiceCodesForUser(userName);
+        log.info("🎤 User {} has access to voice codes: {}", userName, availableVoiceCodes);
 
         // Extract source IP from headers (FreeSWITCH provides this in multiple variables)
         String sourceIp = headers.getOrDefault("variable_sip_received_ip",
@@ -100,7 +90,7 @@ public class CallHandlerService {
         log.debug("⏰ Start timestamp from CDR: {}", startStamp);
 
         try {
-            if (!talkTimeService.checkAndReserveTalkTime(uuid, aParty, bParty, email, sourceIp, startStamp)) {
+            if (!talkTimeService.checkAndReserveTalkTime(uuid, aParty, bParty, userName, sourceIp, startStamp)) {
                 log.warn("❌ Call {} dropped from park due to insufficient talk time", uuid);
                 eslService.sendCommand("uuid_kill " + uuid);
                 return;
@@ -165,53 +155,60 @@ public class CallHandlerService {
     }
 
     private void applyVoiceChanger(String uuid, String userName) {
-        // Extract voice code suffix (last part after underscore, or use default)
-        String suffix = "904";  // Default: normal call, no voice changer
+        // Get available voice codes for this user from HashMap
+        List<String> availableVoiceCodes = voiceUserMappingService.getVoiceCodesForUser(userName);
 
-        if (userName.contains("_")) {
-            // Extract suffix from complex format: "aParty_bParty_email_901"
-            suffix = userName.substring(userName.lastIndexOf("_") + 1);
+        log.info("🎤 User {} has access to voice codes: {}", userName, availableVoiceCodes);
+
+        // Determine which voice code to use
+        // Priority: Use user's selected voice from UserDetails, or default to first available, or 904 (normal)
+        String voiceCode = "904";  // Default: normal call, no voice changer
+
+        if (availableVoiceCodes != null && !availableVoiceCodes.isEmpty()) {
+            // TODO: Get user's selected voice type from UserDetails
+            // For now, use the first available voice code
+            voiceCode = availableVoiceCodes.get(0);
+            log.debug("📋 Using voice code {} from available codes for user {}", voiceCode, userName);
         } else {
-            // For simple BD phone numbers, default to normal call
-            log.debug("📱 Simple phone number format - using default voice mode (904) for {}", userName);
+            log.debug("📱 No voice codes available for user {} - using default voice mode (904)", userName);
         }
 
-        switch (suffix) {
+        // Apply voice changer based on code
+        switch (voiceCode) {
             case "901" -> {
-                log.info("🎭 Applying standard voice changer for call {}", uuid);
+                log.info("🎭 Applying Male Voice (901) for call {}", uuid);
                 callTransferService.startVoiceChanger(uuid);
+                // Male voice parameters
             }
             case "902" -> {
-                log.info("👹 Applying monster voice preset for call {}", uuid);
+                log.info("👹 Applying Female Voice (902) for call {}", uuid);
                 callTransferService.startVoiceChanger(uuid);
                 callTransferService.setVoiceChangerParams(uuid, "-15", "-4", "300");
             }
             case "903" -> {
-                log.info("👶 Applying child voice preset for call {}", uuid);
+                log.info("👶 Applying Child Voice (903) for call {}", uuid);
                 callTransferService.startVoiceChanger(uuid);
                 callTransferService.setVoiceChangerParams(uuid, "8", "4", "120");
             }
             case "904" -> {
-                log.info("📞 Normal call bridge for {} - no voice changer applied", uuid);
+                log.info("🤖 Applying Robot Voice (904) for call {} - no voice changer", uuid);
+                // Robot voice is free forever, no actual voice changer applied
             }
             default -> {
-                log.warn("⚠️ Unknown voice changer suffix '{}' for user {} - defaulting to normal call", suffix, userName);
+                log.warn("⚠️ Unknown voice code '{}' for user {} - defaulting to normal call", voiceCode, userName);
             }
         }
     }
 
     /**
-     * Find B-Leg UUID for a given email by searching through active bridges
-     * @param email Email to search for (e.g., "humu2@gmail.com")
+     * Find B-Leg UUID for a given username (BD phone number) by searching through active bridges
+     * @param username Username/phone number to search for (e.g., "01789896378")
      * @return B-Leg UUID if found, null otherwise
      */
-    public String findBLegUuidByEmail(String email) {
-        if (email == null || email.isEmpty()) {
+    public String findBLegUuidByUsername(String username) {
+        if (username == null || username.isEmpty()) {
             return null;
         }
-
-        // Convert email format: humu2@gmail.com -> humu2-gmail-com
-        String normalizedEmail = email.replace("@", "-").replace(".", "-").toLowerCase();
 
         for (Map.Entry<String, Map<String, String>> entry : activeBridges.entrySet()) {
             String bLegUuid = entry.getKey();
@@ -222,19 +219,14 @@ public class CallHandlerService {
                 continue;
             }
 
-            // Parse userName format: 1003_1006_humu2-gmail-com_901
-            String[] parts = userName.split("_");
-            if (parts.length >= 3) {
-                String extractedEmail = parts[2].toLowerCase(); // third part = email in format humu2-gmail-com
-
-                if (extractedEmail.equals(normalizedEmail)) {
-                    log.debug("✅ Found matching bridge for email {} -> B-Leg UUID: {}", email, bLegUuid);
-                    return bLegUuid;
-                }
+            // userName is always a simple BD phone number: "01789896378"
+            if (userName.equals(username)) {
+                log.debug("✅ Found matching bridge for username {} -> B-Leg UUID: {}", username, bLegUuid);
+                return bLegUuid;
             }
         }
 
-        log.debug("❌ No active bridge found for email: {}", email);
+        log.debug("❌ No active bridge found for username: {}", username);
         return null;
     }
 

@@ -5,6 +5,7 @@ import { DashboardLayout } from '@/components/DashboardLayout'
 import { api } from '@/lib/api'
 import { VoicePurchaseResponse } from '@/types'
 import { format } from 'date-fns'
+import { ShoppingCart, CheckCircle, XCircle, Clock, RefreshCw, Info, Eye, TrendingUp } from 'lucide-react'
 
 export default function VoicePurchasesPage() {
   const [purchases, setPurchases] = useState<VoicePurchaseResponse[]>([])
@@ -43,7 +44,7 @@ export default function VoicePurchasesPage() {
   }
 
   const handleApprove = async (id: number) => {
-    if (!confirm('Are you sure you want to approve this voice purchase? The user will get permanent access to this voice type.')) {
+    if (!confirm('Are you sure you want to approve this voice purchase? The user will get access to this voice type.')) {
       return
     }
 
@@ -105,8 +106,11 @@ export default function VoicePurchasesPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg text-gray-600">Loading voice purchases...</div>
+        <div className="flex justify-center items-center h-96">
+          <div className="text-center">
+            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-pink-600 border-r-transparent mb-4"></div>
+            <p className="text-lg text-gray-600 font-medium">Loading voice purchases...</p>
+          </div>
         </div>
       </DashboardLayout>
     )
@@ -114,65 +118,96 @@ export default function VoicePurchasesPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
+        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Voice Purchase Management</h1>
-            <p className="mt-2 text-sm text-gray-600">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+              Voice Purchase Management
+            </h1>
+            <p className="mt-2 text-gray-600 flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
               Manage voice type purchase requests and approve/reject transactions
             </p>
           </div>
           <button
             onClick={fetchPurchases}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 font-semibold"
           >
+            <RefreshCw className="h-5 w-5" />
             Refresh
           </button>
         </div>
 
+        {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-            {error}
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-xl shadow-md">
+            <p className="font-medium">{error}</p>
           </div>
         )}
 
-        {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-            <div className="text-sm font-medium text-gray-600">Total Requests</div>
-            <div className="mt-2 text-3xl font-bold text-gray-900">{purchases.length}</div>
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-2xl shadow-lg p-6 border-0 hover:shadow-xl transition-all transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-pink-500 p-3 rounded-xl shadow-lg">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Total Requests</p>
+            <p className="text-3xl font-bold text-pink-600">{purchases.length}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
-            <div className="text-sm font-medium text-gray-600">Pending</div>
-            <div className="mt-2 text-3xl font-bold text-yellow-600">{pendingCount}</div>
+
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl shadow-lg p-6 border-0 hover:shadow-xl transition-all transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-yellow-500 p-3 rounded-xl shadow-lg">
+                <Clock className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Pending</p>
+            <p className="text-3xl font-bold text-yellow-600">{pendingCount}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-            <div className="text-sm font-medium text-gray-600">Approved</div>
-            <div className="mt-2 text-3xl font-bold text-green-600">{approvedCount}</div>
+
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow-lg p-6 border-0 hover:shadow-xl transition-all transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-green-500 p-3 rounded-xl shadow-lg">
+                <CheckCircle className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Approved</p>
+            <p className="text-3xl font-bold text-green-600">{approvedCount}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-            <div className="text-sm font-medium text-gray-600">Rejected</div>
-            <div className="mt-2 text-3xl font-bold text-red-600">{rejectedCount}</div>
+
+          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl shadow-lg p-6 border-0 hover:shadow-xl transition-all transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-red-500 p-3 rounded-xl shadow-lg">
+                <XCircle className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Rejected</p>
+            <p className="text-3xl font-bold text-red-600">{rejectedCount}</p>
           </div>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
+        {/* Filter Tabs & Table */}
+        <div className="bg-white rounded-2xl shadow-xl border-0 overflow-hidden">
+          <div className="bg-gradient-to-r from-pink-50 to-purple-50 border-b border-pink-100 p-1">
+            <nav className="flex gap-2 p-2">
               {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all ${
                     statusFilter === status
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-lg'
+                      : 'bg-white text-gray-600 hover:bg-gray-50 hover:shadow-md'
                   }`}
                 >
                   {status}
                   {status !== 'ALL' && (
-                    <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-200">
+                    <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                      statusFilter === status ? 'bg-white/20' : 'bg-pink-100 text-pink-700'
+                    }`}>
                       {status === 'PENDING' && pendingCount}
                       {status === 'APPROVED' && approvedCount}
                       {status === 'REJECTED' && rejectedCount}
@@ -183,66 +218,46 @@ export default function VoicePurchasesPage() {
             </nav>
           </div>
 
-          {/* Purchases Table */}
+          {/* Table */}
           <div className="overflow-x-auto">
             {filteredPurchases.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                No voice purchase requests found
+              <div className="text-center py-16">
+                <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg font-medium">No voice purchase requests found</p>
               </div>
             ) : (
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Voice Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Subscription
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Payment Method
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Transaction ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount (BDT)
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Expiry Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Voice Type</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Subscription</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Payment</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Expiry Date</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-100">
                   {filteredPurchases.map((purchase) => (
-                    <tr key={purchase.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        #{purchase.id}
+                    <tr key={purchase.id} className="hover:bg-pink-50/30 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-bold text-pink-600">#{purchase.id}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-semibold text-gray-900">
                           {purchase.user?.username || `User #${purchase.idUser}`}
                         </div>
                         {purchase.user && (
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs text-gray-500">
                             {purchase.user.firstName} {purchase.user.lastName}
                           </div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-semibold text-gray-900">
                           {purchase.voiceType?.voiceName || 'Unknown'}
                         </div>
                         {purchase.voiceType && (
@@ -252,24 +267,17 @@ export default function VoicePurchasesPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
+                        <span className="px-3 py-1.5 text-xs font-bold rounded-full bg-purple-100 text-purple-700 border border-purple-200 capitalize">
                           {purchase.subscriptionType || 'N/A'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span className="uppercase">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-gray-700 uppercase">
                           {purchase.transactionMethod || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-mono text-gray-700">
-                          {purchase.tnxId || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-gray-900">
-                          ৳{purchase.amount.toFixed(2)}
-                        </div>
+                        <div className="text-base font-bold text-gray-900">৳{purchase.amount.toFixed(2)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {purchase.expiryDate ? (
@@ -286,19 +294,16 @@ export default function VoicePurchasesPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border capitalize ${getStatusColor(
-                            purchase.status
-                          )}`}
-                        >
+                        <span className={`px-3 py-1.5 inline-flex text-xs leading-5 font-bold rounded-full border capitalize ${getStatusColor(purchase.status)}`}>
                           {purchase.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button
                           onClick={() => openDetailsModal(purchase)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-purple-600 hover:text-purple-800 font-semibold inline-flex items-center gap-1"
                         >
+                          <Eye className="h-4 w-4" />
                           View
                         </button>
                         {purchase.status.toLowerCase() === 'pending' && (
@@ -307,7 +312,7 @@ export default function VoicePurchasesPage() {
                             <button
                               onClick={() => handleApprove(purchase.id)}
                               disabled={processingId === purchase.id}
-                              className="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="text-green-600 hover:text-green-800 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {processingId === purchase.id ? 'Processing...' : 'Approve'}
                             </button>
@@ -315,7 +320,7 @@ export default function VoicePurchasesPage() {
                             <button
                               onClick={() => handleReject(purchase.id)}
                               disabled={processingId === purchase.id}
-                              className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="text-red-600 hover:text-red-800 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Reject
                             </button>
@@ -331,116 +336,166 @@ export default function VoicePurchasesPage() {
         </div>
 
         {/* Info Panel */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-gradient-to-r from-pink-50 to-purple-50 border-l-4 border-pink-500 rounded-xl p-6 shadow-md">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
+              <Info className="h-6 w-6 text-pink-600" />
             </div>
-            <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-blue-800">Voice Purchase Information</h3>
-              <div className="mt-2 text-sm text-blue-700">
-                <ul className="list-disc list-inside space-y-1">
-                  <li><strong>Price:</strong> 50 BDT per voice type</li>
-                  <li><strong>Subscription Types:</strong> Monthly (1 month access) or Yearly (1 year access)</li>
-                  <li><strong>Trial System:</strong> Voice Type 3 (Child Voice) has 3-day trial, Voice Type 4 (Robot Voice) is free forever</li>
-                  <li><strong>Workflow:</strong> User selects subscription period → Submits request with payment → Admin reviews → Approve/Reject → Access granted until expiry</li>
-                  <li><strong>Payment Methods:</strong> bKash, Nagad, Rocket</li>
-                  <li><strong>Note:</strong> Approving a request will grant the user access to the voice type until the expiry date (calculated from purchase date)</li>
-                </ul>
+            <div className="ml-4 flex-1">
+              <h3 className="text-lg font-bold text-pink-900 mb-3">Voice Purchase Information</h3>
+              <div className="text-sm text-pink-800 space-y-2">
+                <div className="flex items-start gap-2">
+                  <span className="font-bold min-w-[120px]">Monthly:</span>
+                  <span>200 BDT per voice type (1 month access)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-bold min-w-[120px]">Yearly:</span>
+                  <span>1,000 BDT per voice type (1 year access, 17% off)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-bold min-w-[120px]">Free Trial:</span>
+                  <span>30 sec free calls, 1 premium voice for 3 days</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-bold min-w-[120px]">Workflow:</span>
+                  <span>User selects subscription → Submits request with payment → Admin reviews → Approve/Reject → Access granted until expiry</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Details Modal */}
+      {/* Modern Details Modal */}
       {showModal && selectedPurchase && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onClick={() => setShowModal(false)}>
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="text-lg font-semibold text-gray-900">Voice Purchase Details</h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-semibold text-gray-700 mb-2">Purchase Information</h4>
-                <div className="space-y-2 text-sm">
-                  <div><span className="font-medium">Purchase ID:</span> #{selectedPurchase.id}</div>
-                  <div><span className="font-medium">Voice Type:</span> {selectedPurchase.voiceType?.voiceName || 'Unknown'}</div>
-                  <div><span className="font-medium">Code:</span> {selectedPurchase.voiceType?.code || 'N/A'}</div>
-                  <div><span className="font-medium">Subscription:</span> <span className="capitalize">{selectedPurchase.subscriptionType || 'N/A'}</span></div>
-                  <div><span className="font-medium">Amount:</span> ৳{selectedPurchase.amount.toFixed(2)}</div>
-                  <div>
-                    <span className="font-medium">Status:</span>{' '}
-                    <span className={`px-2 py-1 text-xs rounded-full capitalize ${getStatusColor(selectedPurchase.status)}`}>
-                      {selectedPurchase.status}
-                    </span>
-                  </div>
-                  <div><span className="font-medium">Purchase Date:</span> {format(new Date(selectedPurchase.purchaseDate), 'MMM dd, yyyy hh:mm a')}</div>
-                  {selectedPurchase.expiryDate && (
-                    <div><span className="font-medium">Expiry Date:</span> {format(new Date(selectedPurchase.expiryDate), 'MMM dd, yyyy hh:mm a')}</div>
-                  )}
-                  {selectedPurchase.updatedAt && (
-                    <div><span className="font-medium">Updated:</span> {format(new Date(selectedPurchase.updatedAt), 'MMM dd, yyyy hh:mm a')}</div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-gray-700 mb-2">User & Payment Information</h4>
-                <div className="space-y-2 text-sm">
-                  <div><span className="font-medium">User ID:</span> {selectedPurchase.user?.id || selectedPurchase.idUser}</div>
-                  <div><span className="font-medium">Username:</span> {selectedPurchase.user?.username || 'N/A'}</div>
-                  <div><span className="font-medium">Name:</span> {selectedPurchase.user ? `${selectedPurchase.user.firstName} ${selectedPurchase.user.lastName}` : 'N/A'}</div>
-                  <div className="pt-2 border-t">
-                    <span className="font-medium">Payment Method:</span> <span className="uppercase">{selectedPurchase.transactionMethod || 'N/A'}</span>
-                  </div>
-                  <div><span className="font-medium">Transaction ID:</span> <span className="font-mono text-xs">{selectedPurchase.tnxId || 'N/A'}</span></div>
-                </div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-pink-500 to-purple-600 px-8 py-6 rounded-t-2xl">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-white">Voice Purchase Details</h3>
+                <button onClick={() => setShowModal(false)} className="text-white hover:bg-white/20 rounded-lg p-2 transition">
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             </div>
 
-            {selectedPurchase.status.toLowerCase() === 'pending' && (
-              <div className="mt-6 flex justify-end space-x-3 border-t pt-4">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => handleReject(selectedPurchase.id)}
-                  disabled={processingId === selectedPurchase.id}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Reject
-                </button>
-                <button
-                  onClick={() => handleApprove(selectedPurchase.id)}
-                  disabled={processingId === selectedPurchase.id}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {processingId === selectedPurchase.id ? 'Processing...' : 'Approve'}
-                </button>
+            {/* Modal Content */}
+            <div className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Purchase Information */}
+                <div className="bg-purple-50 rounded-xl p-5 border border-purple-100">
+                  <h4 className="font-bold text-purple-900 mb-4 text-lg flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    Purchase Information
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Purchase ID:</span>
+                      <span className="font-bold text-purple-700">#{selectedPurchase.id}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Voice Type:</span>
+                      <span className="font-semibold">{selectedPurchase.voiceType?.voiceName || 'Unknown'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Code:</span>
+                      <span className="font-mono font-semibold">{selectedPurchase.voiceType?.code || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subscription:</span>
+                      <span className="font-semibold capitalize">{selectedPurchase.subscriptionType || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Amount:</span>
+                      <span className="font-bold text-lg">৳{selectedPurchase.amount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <span className={`px-3 py-1 text-xs rounded-full font-bold capitalize ${getStatusColor(selectedPurchase.status)}`}>
+                        {selectedPurchase.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Purchase Date:</span>
+                      <span className="font-semibold text-xs">{format(new Date(selectedPurchase.purchaseDate), 'MMM dd, yyyy hh:mm a')}</span>
+                    </div>
+                    {selectedPurchase.expiryDate && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Expiry Date:</span>
+                        <span className="font-semibold text-xs">{format(new Date(selectedPurchase.expiryDate), 'MMM dd, yyyy hh:mm a')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* User & Payment Information */}
+                <div className="bg-pink-50 rounded-xl p-5 border border-pink-100">
+                  <h4 className="font-bold text-pink-900 mb-4 text-lg">User & Payment</h4>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">User ID:</span>
+                      <span className="font-semibold">{selectedPurchase.user?.id || selectedPurchase.idUser}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Username:</span>
+                      <span className="font-semibold">{selectedPurchase.user?.username || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Name:</span>
+                      <span className="font-semibold">{selectedPurchase.user ? `${selectedPurchase.user.firstName} ${selectedPurchase.user.lastName}` : 'N/A'}</span>
+                    </div>
+                    <div className="h-px bg-pink-200 my-3"></div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Payment Method:</span>
+                      <span className="font-semibold uppercase">{selectedPurchase.transactionMethod || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Transaction ID:</span>
+                      <span className="font-mono text-xs font-semibold">{selectedPurchase.tnxId || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-            {selectedPurchase.status.toLowerCase() !== 'pending' && (
-              <div className="mt-6 flex justify-end border-t pt-4">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            )}
+
+              {/* Action Buttons */}
+              {selectedPurchase.status.toLowerCase() === 'pending' && (
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => handleReject(selectedPurchase.id)}
+                    disabled={processingId === selectedPurchase.id}
+                    className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => handleApprove(selectedPurchase.id)}
+                    disabled={processingId === selectedPurchase.id}
+                    className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg"
+                  >
+                    {processingId === selectedPurchase.id ? 'Processing...' : 'Approve'}
+                  </button>
+                </div>
+              )}
+              {selectedPurchase.status.toLowerCase() !== 'pending' && (
+                <div className="flex justify-end pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

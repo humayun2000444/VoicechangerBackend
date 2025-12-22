@@ -14,11 +14,11 @@ public class VoiceMorphController {
         this.voiceMorphService = voiceMorphService;
     }
 
-    @GetMapping("/set-voice-by-email")
-    public String setVoiceByEmail(
-            @RequestParam String email,
+    @GetMapping("/set-voice-by-username")
+    public String setVoiceByUsername(
+            @RequestParam String username,
             @RequestParam String code
     ) {
-        return voiceMorphService.setVoiceByEmail(email, code);
+        return voiceMorphService.setVoiceByUsername(username, code);
     }
 }
