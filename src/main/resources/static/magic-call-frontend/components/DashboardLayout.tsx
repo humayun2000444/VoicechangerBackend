@@ -12,7 +12,8 @@ import {
   Menu,
   PhoneCall,
   Wallet,
-  ShoppingCart
+  ShoppingCart,
+  Archive
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { authService } from "@/lib/auth"
@@ -22,6 +23,7 @@ const navigation = [
   { name: "Top-Up Requests", href: "/dashboard/topup", icon: Wallet },
   { name: "Voice Purchases", href: "/dashboard/voice-purchases", icon: ShoppingCart },
   { name: "Voice Types", href: "/dashboard/voice-types", icon: Mic },
+  { name: "Expired Voices", href: "/dashboard/expired-voices", icon: Archive },
   { name: "Users", href: "/dashboard/users", icon: Users },
   { name: "Call History", href: "/dashboard/call-history", icon: PhoneCall },
 ]

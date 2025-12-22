@@ -37,4 +37,15 @@ public interface VoiceUserMappingRepository extends JpaRepository<VoiceUserMappi
            "LEFT JOIN FETCH vum.user " +
            "LEFT JOIN FETCH vum.voiceType")
     List<VoiceUserMapping> findAllWithUserAndVoiceType();
+
+    // Find default voice mapping for a user
+    @Query("SELECT vum FROM VoiceUserMapping vum " +
+           "LEFT JOIN FETCH vum.voiceType " +
+           "WHERE vum.idUser = :idUser AND vum.isDefault = true")
+    Optional<VoiceUserMapping> findDefaultByIdUser(@Param("idUser") Long idUser);
+
+    // Find all default voice mappings for a user (in case there are multiple by mistake)
+    @Query("SELECT vum FROM VoiceUserMapping vum " +
+           "WHERE vum.idUser = :idUser AND vum.isDefault = true")
+    List<VoiceUserMapping> findAllDefaultByIdUser(@Param("idUser") Long idUser);
 }

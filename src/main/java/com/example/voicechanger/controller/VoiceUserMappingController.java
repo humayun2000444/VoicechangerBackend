@@ -212,4 +212,128 @@ public class VoiceUserMappingController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    /**
+     * Get the default voice code for authenticated user
+     * GET /api/voice-user-mapping/default-voice
+     *
+     * @return Default voice code or empty
+     */
+    @GetMapping("/default-voice")
+    public ResponseEntity<Map<String, Object>> getDefaultVoice() {
+        // Get username from JWT token
+        String username = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        log.info("API call: Get default voice for user: {}", username);
+
+        try {
+            java.util.Optional<String> defaultVoiceCode = voiceUserMappingService.getDefaultVoiceCodeForUser(username);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("username", username);
+
+            if (defaultVoiceCode.isPresent()) {
+                response.put("defaultVoiceCode", defaultVoiceCode.get());
+                response.put("hasDefault", true);
+
+                // Get the full mapping details
+                java.util.Optional<VoiceUserMapping> mapping = voiceUserMappingService.getDefaultVoiceMappingForUser(username);
+                mapping.ifPresent(m -> {
+                    response.put("voiceName", m.getVoiceType().getVoiceName());
+                    response.put("mappingId", m.getId());
+                });
+            } else {
+                response.put("defaultVoiceCode", null);
+                response.put("hasDefault", false);
+                response.put("message", "No default voice set");
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error getting default voice for user: {}", username, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Set the default voice for authenticated user
+     * POST /api/voice-user-mapping/default-voice?voiceCode=902
+     *
+     * @param voiceCode - the voice code to set as default (901, 902, 903, 904)
+     * @return Success or error message
+     */
+    @PostMapping("/default-voice")
+    public ResponseEntity<Map<String, String>> setDefaultVoice(@RequestParam String voiceCode) {
+        // Get username from JWT token
+        String username = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        log.info("API call: Set default voice for user: {} to code: {}", username, voiceCode);
+
+        try {
+            String result = voiceUserMappingService.setDefaultVoiceForUser(username, voiceCode);
+
+            Map<String, String> response = new HashMap<>();
+
+            if (result.startsWith("✅")) {
+                response.put("status", "success");
+                response.put("message", result);
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("status", "error");
+                response.put("message", result);
+                return ResponseEntity.badRequest().body(response);
+            }
+        } catch (Exception e) {
+            log.error("Error setting default voice for user: {}", username, e);
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "error");
+            response.put("message", "Internal server error: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
+     * Clear the default voice for authenticated user
+     * DELETE /api/voice-user-mapping/default-voice
+     *
+     * @return Success or error message
+     */
+    @DeleteMapping("/default-voice")
+    public ResponseEntity<Map<String, String>> clearDefaultVoice() {
+        // Get username from JWT token
+        String username = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        log.info("API call: Clear default voice for user: {}", username);
+
+        try {
+            String result = voiceUserMappingService.clearDefaultVoiceForUser(username);
+
+            Map<String, String> response = new HashMap<>();
+
+            if (result.startsWith("✅")) {
+                response.put("status", "success");
+                response.put("message", result);
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("status", "info");
+                response.put("message", result);
+                return ResponseEntity.ok().body(response);
+            }
+        } catch (Exception e) {
+            log.error("Error clearing default voice for user: {}", username, e);
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "error");
+            response.put("message", "Internal server error: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
 }

@@ -1,6 +1,8 @@
 package com.example.voicechanger.service;
 
+import com.example.voicechanger.entity.User;
 import com.example.voicechanger.entity.VoiceUserMapping;
+import com.example.voicechanger.repository.UserRepository;
 import com.example.voicechanger.repository.VoiceUserMappingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +10,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -19,6 +22,7 @@ import java.util.stream.Collectors;
 public class VoiceUserMappingService {
 
     private final VoiceUserMappingRepository voiceUserMappingRepository;
+    private final UserRepository userRepository;
 
     /**
      * Builds a HashMap where:
@@ -234,5 +238,185 @@ public class VoiceUserMappingService {
         });
 
         log.info("=== End of HashMap ===");
+    }
+
+    /**
+     * Gets the default voice code for a user by username
+     *
+     * @param username - the username to lookup
+     * @return Optional containing the default voice code, or empty if no default set
+     */
+    public Optional<String> getDefaultVoiceCodeForUser(String username) {
+        log.info("Getting default voice code for user: {}", username);
+
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            log.warn("User not found: {}", username);
+            return Optional.empty();
+        }
+
+        Long userId = userOpt.get().getId();
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<VoiceUserMapping> defaultMapping = voiceUserMappingRepository.findDefaultByIdUser(userId);
+
+        if (defaultMapping.isEmpty()) {
+            log.debug("No default voice set for user: {}", username);
+            return Optional.empty();
+        }
+
+        VoiceUserMapping mapping = defaultMapping.get();
+
+        // Check if the default mapping is still active
+        if (!isActiveMappingByExpiry(mapping, now)) {
+            log.warn("Default voice mapping for user {} has expired", username);
+            return Optional.empty();
+        }
+
+        String voiceCode = mapping.getVoiceType().getCode();
+        log.info("Default voice code for user {}: {}", username, voiceCode);
+
+        return Optional.of(voiceCode);
+    }
+
+    /**
+     * Sets the default voice for a user
+     *
+     * @param username - the username
+     * @param voiceCode - the voice code to set as default
+     * @return success message or error message
+     */
+    @Transactional
+    @CacheEvict(value = "userVoiceCodesMap", allEntries = true)
+    public String setDefaultVoiceForUser(String username, String voiceCode) {
+        log.info("Setting default voice for user {} to code {}", username, voiceCode);
+
+        try {
+            // Find user
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                return "Error: User not found - " + username;
+            }
+
+            User user = userOpt.get();
+            Long userId = user.getId();
+            LocalDateTime now = LocalDateTime.now();
+
+            // Find all active mappings for this user
+            List<VoiceUserMapping> activeMappings = voiceUserMappingRepository.findAllWithUserAndVoiceType()
+                    .stream()
+                    .filter(m -> m.getIdUser().equals(userId))
+                    .filter(m -> isActiveMappingByExpiry(m, now))
+                    .collect(Collectors.toList());
+
+            if (activeMappings.isEmpty()) {
+                return "Error: User has no active voice mappings";
+            }
+
+            // Find the mapping with the requested voice code
+            Optional<VoiceUserMapping> targetMapping = activeMappings.stream()
+                    .filter(m -> m.getVoiceType().getCode().equals(voiceCode))
+                    .findFirst();
+
+            if (targetMapping.isEmpty()) {
+                return "Error: User does not have access to voice code " + voiceCode;
+            }
+
+            // Clear all existing defaults for this user
+            List<VoiceUserMapping> existingDefaults = voiceUserMappingRepository.findAllDefaultByIdUser(userId);
+            for (VoiceUserMapping mapping : existingDefaults) {
+                mapping.setIsDefault(false);
+                voiceUserMappingRepository.save(mapping);
+                log.debug("Cleared default flag from mapping ID: {}", mapping.getId());
+            }
+
+            // Set the new default
+            VoiceUserMapping newDefault = targetMapping.get();
+            newDefault.setIsDefault(true);
+            voiceUserMappingRepository.save(newDefault);
+
+            log.info("Successfully set voice code {} as default for user {}", voiceCode, username);
+            return "✅ Default voice set to code " + voiceCode + " (" + newDefault.getVoiceType().getVoiceName() + ")";
+
+        } catch (Exception e) {
+            log.error("Error setting default voice for user {}: {}", username, e.getMessage(), e);
+            return "Error: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Gets the default voice mapping details for a user
+     *
+     * @param username - the username to lookup
+     * @return Optional containing the default VoiceUserMapping, or empty if no default set
+     */
+    public Optional<VoiceUserMapping> getDefaultVoiceMappingForUser(String username) {
+        log.info("Getting default voice mapping for user: {}", username);
+
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            log.warn("User not found: {}", username);
+            return Optional.empty();
+        }
+
+        Long userId = userOpt.get().getId();
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<VoiceUserMapping> defaultMapping = voiceUserMappingRepository.findDefaultByIdUser(userId);
+
+        if (defaultMapping.isEmpty()) {
+            log.debug("No default voice set for user: {}", username);
+            return Optional.empty();
+        }
+
+        VoiceUserMapping mapping = defaultMapping.get();
+
+        // Check if the default mapping is still active
+        if (!isActiveMappingByExpiry(mapping, now)) {
+            log.warn("Default voice mapping for user {} has expired", username);
+            return Optional.empty();
+        }
+
+        return defaultMapping;
+    }
+
+    /**
+     * Clears the default voice for a user
+     *
+     * @param username - the username
+     * @return success message or error message
+     */
+    @Transactional
+    @CacheEvict(value = "userVoiceCodesMap", allEntries = true)
+    public String clearDefaultVoiceForUser(String username) {
+        log.info("Clearing default voice for user: {}", username);
+
+        try {
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                return "Error: User not found - " + username;
+            }
+
+            Long userId = userOpt.get().getId();
+
+            List<VoiceUserMapping> existingDefaults = voiceUserMappingRepository.findAllDefaultByIdUser(userId);
+
+            if (existingDefaults.isEmpty()) {
+                return "No default voice set for user " + username;
+            }
+
+            for (VoiceUserMapping mapping : existingDefaults) {
+                mapping.setIsDefault(false);
+                voiceUserMappingRepository.save(mapping);
+                log.debug("Cleared default flag from mapping ID: {}", mapping.getId());
+            }
+
+            log.info("Successfully cleared default voice for user {}", username);
+            return "✅ Default voice cleared for user " + username;
+
+        } catch (Exception e) {
+            log.error("Error clearing default voice for user {}: {}", username, e.getMessage(), e);
+            return "Error: " + e.getMessage();
+        }
     }
 }

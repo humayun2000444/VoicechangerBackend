@@ -6,10 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -161,14 +158,19 @@ public class CallHandlerService {
         log.info("🎤 User {} has access to voice codes: {}", userName, availableVoiceCodes);
 
         // Determine which voice code to use
-        // Priority: Use user's selected voice from UserDetails, or default to first available, or 904 (normal)
+        // Priority: 1) User's default voice, 2) First available, 3) 904 (normal)
         String voiceCode = "904";  // Default: normal call, no voice changer
 
-        if (availableVoiceCodes != null && !availableVoiceCodes.isEmpty()) {
-            // TODO: Get user's selected voice type from UserDetails
-            // For now, use the first available voice code
+        // Try to get user's default voice
+        Optional<String> defaultVoice = voiceUserMappingService.getDefaultVoiceCodeForUser(userName);
+
+        if (defaultVoice.isPresent()) {
+            voiceCode = defaultVoice.get();
+            log.info("🎯 Using default voice code {} for user {}", voiceCode, userName);
+        } else if (availableVoiceCodes != null && !availableVoiceCodes.isEmpty()) {
+            // No default set, use the first available voice code
             voiceCode = availableVoiceCodes.get(0);
-            log.debug("📋 Using voice code {} from available codes for user {}", voiceCode, userName);
+            log.debug("📋 No default voice set - using first available code {} for user {}", voiceCode, userName);
         } else {
             log.debug("📱 No voice codes available for user {} - using default voice mode (904)", userName);
         }

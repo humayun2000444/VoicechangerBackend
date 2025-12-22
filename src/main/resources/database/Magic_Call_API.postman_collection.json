@@ -1,738 +1,1889 @@
 {
-	"info": {
-		"_postman_id": "magic-call-complete-2025",
-		"name": "Magic Call API - Complete Collection",
-		"description": "Complete API with Authentication, User Management, User Details CRUD, Voice Processing, Call History Management, Voice Purchase System, Top-Up System, and Admin Setup\n\n## Total Endpoints: 57\n- Authentication: 2 endpoints\n- Admin Setup: 2 endpoints\n- User Management: 9 endpoints\n- User Details: 9 endpoints (NEW - Set selected voice type)\n- Voice Processing: 4 endpoints\n- Voice Types: 6 endpoints\n- Balance: 2 endpoints\n- Call History: 9 endpoints\n- Voice Purchase: 11 endpoints (NEW - Trial system, admin approval workflow, separate payment tracking)\n- Top-Up: 8 endpoints (User top-up with admin approval)\n\n## Features:\n- JWT-based authentication with BCrypt password encryption\n- Admin setup utility for creating/updating admin users\n- Role-based access control (ROLE_USER, ROLE_ADMIN)\n- Complete user CRUD operations (profile, admin management)\n- User details management (extended profile information, default voice selection)\n- Voice transformation (Male to Female, Female to Male, Robot, Child)\n- User balance management (duration in seconds)\n- Voice type purchase system with 3-day trial and admin approval\n- Call history and CDR management with FreeSWITCH integration\n- Top-up system with manual admin approval (60 sec per 3 BDT, minimum 20 BDT)\n- Automatic FreeSWITCH user provisioning with XML config\n- Transaction rollback on FreeSWITCH config failure\n- Enable/Disable user functionality\n\n## Error Codes:\n- USERNAME_EXISTS (409): Username already taken\n- INVALID_CREDENTIALS (401): Invalid username or password\n- INVALID_REQUEST (400): Missing or invalid request data\n- FREESWITCH_CONFIG_FAILED (500): FreeSWITCH configuration creation failed\n- AUDIO_PROCESSING_FAILED (500): Audio processing error\n\n## Voice Type System:\n- Voice Type 1 (Male Voice - 901): Purchasable with admin approval\n- Voice Type 2 (Female Voice - 902): Purchasable with admin approval\n- Voice Type 3 (Child Voice - 903): 3-day trial on signup, then purchasable with admin approval\n- Voice Type 4 (Robot Voice - 904): Free forever on signup\n\n## Security Notes:\n- User registration automatically creates FreeSWITCH configuration\n- If FreeSWITCH config fails, user is NOT created (transaction rollback)\n- New users automatically get voice type 3 (3-day trial) and voice type 4 (permanent)\n- Voice purchase requests require admin approval before granting access\n- Users can select their default voice type from available voices\n- All endpoints except auth, setup, and voice processing require JWT token\n- Admin endpoints require ROLE_ADMIN authority\n- Users can only update their own profile (cannot change roles)\n- Admins can manage all users and change roles\n- Deleting a user also deletes associated FreeSWITCH configuration\n- Top-up requests start as PENDING and require admin approval\n- Upon approval, balance is automatically added to user account\n- Admin Setup endpoints are public (no authentication required) for initial setup",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"auth": {
-		"type": "bearer",
-		"bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]
-	},
-	"item": [
-		{
-			"name": "Authentication",
-			"description": "User registration and login endpoints. No authentication required.",
-			"item": [
-				{
-					"name": "Signup",
-					"event": [{
-						"listen": "test",
-						"script": {
-							"exec": ["if (pm.response.code === 201) { var jsonData = pm.response.json(); pm.environment.set('jwt_token', jsonData.token); }"],
-							"type": "text/javascript"
-						}
-					}],
-					"request": {
-						"auth": {"type": "noauth"},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"Pass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {"raw": "{{base_url}}/api/auth/signup", "host": ["{{base_url}}"], "path": ["api", "auth", "signup"]},
-						"description": "Register a new user with ROLE_USER. Automatically creates FreeSWITCH configuration.\n\n**Success Response (201):**\n```json\n{\n  \"token\": \"eyJhbGci...\",\n  \"username\": \"testuser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"roles\": [\"ROLE_USER\"],\n  \"createdAt\": \"2025-12-20T21:26:46.435740605\",\n  \"message\": \"User registered successfully\"\n}\n```\n\n**Error Response (409 - Username Exists):**\n```json\n{\n  \"statusCode\": 409,\n  \"error\": \"USERNAME_EXISTS\",\n  \"message\": \"Username 'testuser' is already taken\",\n  \"path\": \"/api/auth/signup\",\n  \"timestamp\": \"2025-12-20T21:26:46\"\n}\n```\n\n**Error Response (500 - FreeSWITCH Config Failed):**\n```json\n{\n  \"statusCode\": 500,\n  \"error\": \"FREESWITCH_CONFIG_FAILED\",\n  \"message\": \"Failed to create FreeSWITCH config directory. Please ensure the directory exists and has proper permissions: /usr/local/freeswitch/conf/directory/default\",\n  \"path\": \"/api/auth/signup\",\n  \"timestamp\": \"2025-12-20T21:26:46\"\n}\n```"
-					}
-				},
-				{
-					"name": "Login",
-					"event": [{
-						"listen": "test",
-						"script": {
-							"exec": ["if (pm.response.code === 200) { var jsonData = pm.response.json(); pm.environment.set('jwt_token', jsonData.token); }"],
-							"type": "text/javascript"
-						}
-					}],
-					"request": {
-						"auth": {"type": "noauth"},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {"raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"]},
-						"description": "Login with username and password to get JWT token.\n\n**Default Admin Credentials:**\n- Username: admin\n- Password: admin123\n\n**Test User Credentials:**\n- Username: testuser\n- Password: password123\n\n**Success Response (200):**\n```json\n{\n  \"token\": \"eyJhbGci...\",\n  \"username\": \"admin\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"User\",\n  \"roles\": [\"ROLE_ADMIN\", \"ROLE_USER\"],\n  \"createdAt\": \"2025-12-20T21:26:46.435740605\",\n  \"message\": \"Login successful\"\n}\n```\n\n**Error Response (401):**\n```json\n{\n  \"statusCode\": 401,\n  \"error\": \"INVALID_CREDENTIALS\",\n  \"message\": \"Invalid username or password\",\n  \"path\": \"/api/auth/login\",\n  \"timestamp\": \"2025-12-20T21:26:46\"\n}\n```\n\n**Note:** If you get INVALID_CREDENTIALS error, use the Admin Setup endpoints to create/reset admin user."
-					}
-				}
-			]
-		},
-		{
-			"name": "Admin Setup",
-			"description": "Admin user setup utilities. These endpoints are public (no authentication required) to help with initial admin user creation or password reset.",
-			"item": [
-				{
-					"name": "Test Admin User",
-					"request": {
-						"auth": {"type": "noauth"},
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/setup/test-admin", "host": ["{{base_url}}"], "path": ["api", "setup", "test-admin"]},
-						"description": "Check if admin user exists and view details.\n\n**Success Response (200):**\n```json\n{\n  \"exists\": true,\n  \"username\": \"admin\",\n  \"enabled\": true,\n  \"roles\": [\"ROLE_ADMIN\", \"ROLE_USER\"],\n  \"passwordHash\": \"$2a$10$...\"\n}\n```\n\n**If Admin Not Found:**\n```json\n{\n  \"exists\": false,\n  \"message\": \"Admin user not found. Use POST /api/setup/create-admin to create it.\"\n}\n```"
-					}
-				},
-				{
-					"name": "Create or Update Admin User",
-					"request": {
-						"auth": {"type": "noauth"},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"User\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {"raw": "{{base_url}}/api/setup/create-admin", "host": ["{{base_url}}"], "path": ["api", "setup", "create-admin"]},
-						"description": "Create a new admin user or update existing admin user with new password.\n\n**Request Body:**\n- username (optional, default: \"admin\")\n- password (optional, default: \"admin123\")\n- firstName (optional, default: \"Admin\")\n- lastName (optional, default: \"User\")\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"message\": \"Admin user created/updated successfully\",\n  \"username\": \"admin\",\n  \"password\": \"admin123\",\n  \"roles\": [\"ROLE_ADMIN\", \"ROLE_USER\"],\n  \"passwordHash\": \"$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7q5kQjL86\"\n}\n```\n\n**Important Notes:**\n- This endpoint is public (no JWT token required)\n- Use this to fix login issues or reset admin password\n- The password will be automatically encrypted with BCrypt\n- If admin user exists, it will be updated with new details\n- If admin user doesn't exist, it will be created with ROLE_ADMIN and ROLE_USER\n- After creating admin, use the /api/auth/login endpoint to get JWT token"
-					}
-				}
-			]
-		},
-		{
-			"name": "User Management",
-			"description": "CRUD operations for users. Authenticated users can manage their own profile. Admins can manage all users.",
-			"item": [
-				{
-					"name": "Get My Profile",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/users/me", "host": ["{{base_url}}"], "path": ["api", "users", "me"]},
-						"description": "Get profile for the authenticated user.\n\n**Success Response (200):**\n```json\n{\n  \"id\": 1,\n  \"username\": \"testuser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"enabled\": true,\n  \"roles\": [\"ROLE_USER\"],\n  \"createdAt\": \"2025-12-20T21:26:46.435740605\",\n  \"updatedAt\": \"2025-12-20T21:26:46.435740605\"\n}\n```"
-					}
-				},
-				{
-					"name": "Update My Profile",
-					"request": {
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith\",\n  \"enabled\": true\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {"raw": "{{base_url}}/api/users/me", "host": ["{{base_url}}"], "path": ["api", "users", "me"]},
-						"description": "Update profile for the authenticated user.\n\n**Note:** Users cannot change their own roles."
-					}
-				},
-				{
-					"name": "Get All Users (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/users", "host": ["{{base_url}}"], "path": ["api", "users"]},
-						"description": "Get all users. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Get User By ID (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/users/1", "host": ["{{base_url}}"], "path": ["api", "users", "1"]},
-						"description": "Get user by ID. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Get User By Username (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/users/username/testuser", "host": ["{{base_url}}"], "path": ["api", "users", "username", "testuser"]},
-						"description": "Get user by username. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Update User By ID (Admin)",
-					"request": {
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"enabled\": true,\n  \"roles\": [\"ROLE_USER\", \"ROLE_ADMIN\"]\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {"raw": "{{base_url}}/api/users/1", "host": ["{{base_url}}"], "path": ["api", "users", "1"]},
-						"description": "Update user by ID. **Requires ROLE_ADMIN.**\n\n**Note:** Admin can change user roles."
-					}
-				},
-				{
-					"name": "Delete User By ID (Admin)",
-					"request": {
-						"method": "DELETE",
-						"url": {"raw": "{{base_url}}/api/users/1", "host": ["{{base_url}}"], "path": ["api", "users", "1"]},
-						"description": "Delete user by ID. Also deletes associated FreeSWITCH configuration. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Enable User (Admin)",
-					"request": {
-						"method": "PATCH",
-						"url": {"raw": "{{base_url}}/api/users/1/enable", "host": ["{{base_url}}"], "path": ["api", "users", "1", "enable"]},
-						"description": "Enable user by ID. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Disable User (Admin)",
-					"request": {
-						"method": "PATCH",
-						"url": {"raw": "{{base_url}}/api/users/1/disable", "host": ["{{base_url}}"], "path": ["api", "users", "1", "disable"]},
-						"description": "Disable user by ID. **Requires ROLE_ADMIN.**"
-					}
-				}
-			]
-		},
-		{
-			"name": "User Details Management",
-			"description": "CRUD operations for user details, including selecting default voice type. Requires JWT authentication.",
-			"item": [
-				{
-					"name": "Create My User Details",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"dateOfBirth\": \"1990-01-15\",\n  \"gender\": \"Male\",\n  \"address\": \"123 Main St, City, Country\",\n  \"email\": \"user@example.com\",\n  \"profilePhoto\": \"/images/profile.jpg\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {"raw": "{{base_url}}/api/user-details/my", "host": ["{{base_url}}"], "path": ["api", "user-details", "my"]},
-						"description": "Create user details for the authenticated user."
-					}
-				},
-				{
-					"name": "Get My User Details",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/user-details/my", "host": ["{{base_url}}"], "path": ["api", "user-details", "my"]},
-						"description": "Get user details for the authenticated user."
-					}
-				},
-				{
-					"name": "Update My User Details",
-					"request": {
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"dateOfBirth\": \"1990-01-15\",\n  \"gender\": \"Male\",\n  \"address\": \"456 New St, City, Country\",\n  \"email\": \"newemail@example.com\",\n  \"profilePhoto\": \"/images/newprofile.jpg\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {"raw": "{{base_url}}/api/user-details/my", "host": ["{{base_url}}"], "path": ["api", "user-details", "my"]},
-						"description": "Update user details for the authenticated user."
-					}
-				},
-				{
-					"name": "Delete My User Details",
-					"request": {
-						"method": "DELETE",
-						"url": {"raw": "{{base_url}}/api/user-details/my", "host": ["{{base_url}}"], "path": ["api", "user-details", "my"]},
-						"description": "Delete user details for the authenticated user."
-					}
-				},
-				{
-					"name": "Set Selected Voice Type",
-					"request": {
-						"method": "PUT",
-						"url": {"raw": "{{base_url}}/api/user-details/my/selected-voice/3", "host": ["{{base_url}}"], "path": ["api", "user-details", "my", "selected-voice", "3"]},
-						"description": "Set the default voice type for the authenticated user. The user must have active access to the voice type. **Requires authentication.**\n\nPath Parameter:\n- voiceTypeId: ID of the voice type to set as default (must be an active voice type for the user)"
-					}
-				},
-				{
-					"name": "Get All User Details (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/user-details/all", "host": ["{{base_url}}"], "path": ["api", "user-details", "all"]},
-						"description": "Get all user details. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Get User Details By ID (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/user-details/1", "host": ["{{base_url}}"], "path": ["api", "user-details", "1"]},
-						"description": "Get user details by ID. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Update User Details By ID (Admin)",
-					"request": {
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"dateOfBirth\": \"1985-05-20\",\n  \"gender\": \"Female\",\n  \"address\": \"Updated Address\",\n  \"email\": \"admin@example.com\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {"raw": "{{base_url}}/api/user-details/1", "host": ["{{base_url}}"], "path": ["api", "user-details", "1"]},
-						"description": "Update user details by ID. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Delete User Details By ID (Admin)",
-					"request": {
-						"method": "DELETE",
-						"url": {"raw": "{{base_url}}/api/user-details/1", "host": ["{{base_url}}"], "path": ["api", "user-details", "1"]},
-						"description": "Delete user details by ID. **Requires ROLE_ADMIN.**"
-					}
-				}
-			]
-		},
-		{
-			"name": "Voice Processing",
-			"description": "Voice transformation endpoints. No authentication required.",
-			"item": [
-				{
-					"name": "Voice Test - Male to Female (901)",
-					"request": {
-						"auth": {"type": "noauth"},
-						"method": "POST",
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "audio", "type": "file", "src": [], "description": "Audio file to process"},
-								{"key": "code", "value": "901", "type": "text", "description": "Transformation code: 901 = Male to Female"}
-							]
-						},
-						"url": {"raw": "{{base_url}}/api/voiceTest?code=901", "host": ["{{base_url}}"], "path": ["api", "voiceTest"], "query": [{"key": "code", "value": "901"}]},
-						"description": "Transform voice from Male to Female using preset parameters.\n\n**Code 901 Parameters:**\n- Shift: 5.0\n- Formant: 1.4\n- Base: 100.0"
-					}
-				},
-				{
-					"name": "Voice Test - Female to Male (902)",
-					"request": {
-						"auth": {"type": "noauth"},
-						"method": "POST",
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "audio", "type": "file", "src": [], "description": "Audio file to process"},
-								{"key": "code", "value": "902", "type": "text", "description": "Transformation code: 902 = Female to Male"}
-							]
-						},
-						"url": {"raw": "{{base_url}}/api/voiceTest?code=902", "host": ["{{base_url}}"], "path": ["api", "voiceTest"], "query": [{"key": "code", "value": "902"}]},
-						"description": "Transform voice from Female to Male using preset parameters.\n\n**Code 902 Parameters:**\n- Shift: -5.0\n- Formant: 0.8\n- Base: 100.0"
-					}
-				},
-				{
-					"name": "Voice Test - Robot Voice (903)",
-					"request": {
-						"auth": {"type": "noauth"},
-						"method": "POST",
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "audio", "type": "file", "src": [], "description": "Audio file to process"},
-								{"key": "code", "value": "903", "type": "text", "description": "Transformation code: 903 = Robot Voice"}
-							]
-						},
-						"url": {"raw": "{{base_url}}/api/voiceTest?code=903", "host": ["{{base_url}}"], "path": ["api", "voiceTest"], "query": [{"key": "code", "value": "903"}]},
-						"description": "Transform voice to Robot Voice using preset parameters.\n\n**Code 903 Parameters:**\n- Shift: 0.0\n- Formant: 1.0\n- Base: 80.0"
-					}
-				},
-				{
-					"name": "Process Audio - Custom Parameters",
-					"request": {
-						"auth": {"type": "noauth"},
-						"method": "POST",
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "audio", "type": "file", "src": [], "description": "Audio file to process"},
-								{"key": "shift", "value": "10.0", "type": "text", "description": "Pitch shift value"},
-								{"key": "formant", "value": "2.0", "type": "text", "description": "Formant value"},
-								{"key": "base", "value": "100.0", "type": "text", "description": "Base frequency"}
-							]
-						},
-						"url": {"raw": "{{base_url}}/api/process?shift=10.0&formant=2.0&base=100.0", "host": ["{{base_url}}"], "path": ["api", "process"], "query": [{"key": "shift", "value": "10.0"}, {"key": "formant", "value": "2.0"}, {"key": "base", "value": "100.0"}]},
-						"description": "Process audio with custom transformation parameters.\n\n**Parameters:**\n- **shift**: Pitch shift amount (positive = higher, negative = lower)\n- **formant**: Formant preservation factor (affects vocal characteristics)\n- **base**: Base frequency for processing"
-					}
-				}
-			]
-		},
-		{
-			"name": "Voice Types",
-			"description": "Manage voice transformation types. All users can view, only admins can create/update/delete.",
-			"item": [
-				{
-					"name": "Get All Voice Types",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/voice-types", "host": ["{{base_url}}"], "path": ["api", "voice-types"]},
-						"description": "Get all available voice types."
-					}
-				},
-				{
-					"name": "Get Voice Type By ID",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/voice-types/1", "host": ["{{base_url}}"], "path": ["api", "voice-types", "1"]},
-						"description": "Get voice type by ID."
-					}
-				},
-				{
-					"name": "Get Voice Type By Code",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/voice-types/code/901", "host": ["{{base_url}}"], "path": ["api", "voice-types", "code", "901"]},
-						"description": "Get voice type by code (e.g., 901, 902, 903)."
-					}
-				},
-				{
-					"name": "Create Voice Type (Admin)",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"voiceName\": \"Deep Voice\",\n  \"code\": \"904\"\n}",
-							"options": {"raw": {"language": "json"}}
-						},
-						"url": {"raw": "{{base_url}}/api/voice-types", "host": ["{{base_url}}"], "path": ["api", "voice-types"]},
-						"description": "Create a new voice type. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Update Voice Type (Admin)",
-					"request": {
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"voiceName\": \"Updated Voice Name\",\n  \"code\": \"904\"\n}",
-							"options": {"raw": {"language": "json"}}
-						},
-						"url": {"raw": "{{base_url}}/api/voice-types/1", "host": ["{{base_url}}"], "path": ["api", "voice-types", "1"]},
-						"description": "Update voice type by ID. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Delete Voice Type (Admin)",
-					"request": {
-						"method": "DELETE",
-						"url": {"raw": "{{base_url}}/api/voice-types/1", "host": ["{{base_url}}"], "path": ["api", "voice-types", "1"]},
-						"description": "Delete voice type by ID. **Requires ROLE_ADMIN.**"
-					}
-				}
-			]
-		},
-		{
-			"name": "Balance",
-			"description": "User balance management. Balance is tracked in duration (seconds). Users can view their own balance, admins can view any user's balance.",
-			"item": [
-				{
-					"name": "Get My Balance",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/balance/my", "host": ["{{base_url}}"], "path": ["api", "balance", "my"]},
-						"description": "Get balance for the authenticated user. Returns duration in seconds with formatted string."
-					}
-				},
-				{
-					"name": "Get User Balance (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/balance/user/1", "host": ["{{base_url}}"], "path": ["api", "balance", "user", "1"]},
-						"description": "Get balance for any user by ID. **Requires ROLE_ADMIN.**"
-					}
-				}
-			]
-		},
-		{
-			"name": "Voice Purchase",
-			"description": "Voice type purchase system with 3-day trial and admin approval workflow.\n\n**Auto-Assignment on Registration:**\n- Voice Type 3 (Child Voice): 3-day trial\n- Voice Type 4 (Robot Voice): Free forever\n\n**Purchase Workflow:**\n1. User requests to purchase a voice type (status: pending)\n2. Admin reviews and approves/rejects the request\n3. Upon approval, user gets permanent access to the voice type\n\n**Purchasable Voice Types:**\n- Voice Type 1 (Male Voice)\n- Voice Type 2 (Female Voice)\n- Voice Type 3 (Child Voice) - after trial expires",
-			"item": [
-				{
-					"name": "Purchase Voice Type",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"idVoiceType\": 1,\n  \"transactionMethod\": \"bkash\",\n  \"tnxId\": \"TXN123456789\",\n  \"subscriptionType\": \"monthly\"\n}",
-							"options": {"raw": {"language": "json"}}
-						},
-						"url": {"raw": "{{base_url}}/api/voice-purchase", "host": ["{{base_url}}"], "path": ["api", "voice-purchase"]},
-						"description": "Request to purchase a voice type with payment details and subscription period. **Requires authentication.** Default price: 50 BDT per voice type.\n\n**Important:** This creates a PENDING purchase request. Admin approval is required to grant access. Payment info is stored directly in the voice_purchases table.\n\n**Request body:**\n- idVoiceType: ID of the voice type to purchase (1, 2, or 3)\n- transactionMethod: Payment method (\"bkash\", \"nagad\", or \"rocket\")\n- tnxId: Transaction ID from mobile banking\n- subscriptionType: Subscription period (\"monthly\" or \"yearly\")\n\n**Expiry Calculation:**\n- Monthly subscription: Access expires after 1 month from purchase date\n- Yearly subscription: Access expires after 1 year from purchase date\n\n**Response:**\n- Status will be \"pending\" until admin approves\n- Payment info and subscription type stored in voice_purchases record\n- expiryDate calculated automatically based on subscriptionType\n- On approval, user gets access to the voice type until expiry date"
-					}
-				},
-				{
-					"name": "Get My Purchases",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/voice-purchase/my", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "my"]},
-						"description": "Get all voice type purchases for the authenticated user. **Requires authentication.**"
-					}
-				},
-				{
-					"name": "Get All Purchases (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/voice-purchase", "host": ["{{base_url}}"], "path": ["api", "voice-purchase"]},
-						"description": "Get all voice type purchases. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Get Purchases by Voice Type (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/voice-purchase/voice-type/1", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "voice-type", "1"]},
-						"description": "Get all purchases for a specific voice type. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Get My Voice Types",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/voice-purchase/my-voice-types", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "my-voice-types"]},
-						"description": "Get all voice types available to the authenticated user (both free and purchased). **Requires authentication.**"
-					}
-				},
-				{
-					"name": "Get Available Voice Types",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/voice-purchase/available", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "available"]},
-						"description": "Get voice types available for purchase. **Only returns voice types the user does NOT already have.** **Requires authentication.**\n\nThis endpoint filters out:\n- Voice types the user already purchased\n- Voice types auto-assigned (3 and 4)\n- Voice types with active trial access\n\nPerfect for showing a \"Buy Voice Types\" list in the UI."
-					}
-				},
-				{
-					"name": "Get My Active Voice Types",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/voice-purchase/my-active-voice-types", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "my-active-voice-types"]},
-						"description": "Get only active (non-expired) voice types for the authenticated user. Excludes expired trial voices. **Requires authentication.**"
-					}
-				},
-				{
-					"name": "Get Pending Purchases (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/voice-purchase/pending", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "pending"]},
-						"description": "Get all pending voice purchase requests awaiting admin approval. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Approve Purchase (Admin)",
-					"request": {
-						"method": "PUT",
-						"url": {"raw": "{{base_url}}/api/voice-purchase/1/approve", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "1", "approve"]},
-						"description": "Approve a pending voice purchase request and grant the user access to the voice type. **Requires ROLE_ADMIN.**\n\nUpdates purchase status from 'pending' to 'approved' and creates/updates voice-user mapping."
-					}
-				},
-				{
-					"name": "Reject Purchase (Admin)",
-					"request": {
-						"method": "PUT",
-						"url": {"raw": "{{base_url}}/api/voice-purchase/1/reject", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "1", "reject"]},
-						"description": "Reject a pending voice purchase request. User will NOT get access to the voice type. **Requires ROLE_ADMIN.**\n\nUpdates purchase status from 'pending' to 'rejected'."
-					}
-				},
-				{
-					"name": "Delete Purchase (Admin)",
-					"request": {
-						"method": "DELETE",
-						"url": {"raw": "{{base_url}}/api/voice-purchase/1", "host": ["{{base_url}}"], "path": ["api", "voice-purchase", "1"]},
-						"description": "Delete a voice purchase by ID. This also removes the voice-user mapping. **Requires ROLE_ADMIN.**"
-					}
-				}
-			]
-		},
-		{
-			"name": "Call History",
-			"description": "Call history and CDR (Call Detail Record) management. All endpoints require JWT authentication. Users can view their own call history, admins can view all records.",
-			"item": [
-				{
-					"name": "Get My Call History",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/call-history/my", "host": ["{{base_url}}"], "path": ["api", "call-history", "my"]},
-						"description": "Get call history for the authenticated user. **Requires authentication.**\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"message\": \"Call history retrieved successfully\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"aparty\": \"testuser\",\n      \"bparty\": \"1234567890\",\n      \"uuid\": \"abc123-def456-ghi789\",\n      \"sourceIp\": \"192.168.1.100\",\n      \"createTime\": \"2025-12-21T10:00:00\",\n      \"startTime\": \"2025-12-21T10:00:05\",\n      \"endTime\": \"2025-12-21T10:05:30\",\n      \"duration\": 325,\n      \"status\": \"COMPLETED\",\n      \"hangupCause\": \"NORMAL_CLEARING\",\n      \"codec\": \"PCMU\",\n      \"idUser\": 1,\n      \"user\": {...}\n    }\n  ]\n}\n```"
-					}
-				},
-				{
-					"name": "Get All Call History (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/call-history", "host": ["{{base_url}}"], "path": ["api", "call-history"]},
-						"description": "Get all call history records. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Get Call History By ID",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/call-history/1", "host": ["{{base_url}}"], "path": ["api", "call-history", "1"]},
-						"description": "Get call history record by ID. **Requires authentication.**"
-					}
-				},
-				{
-					"name": "Get Call History By UUID",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/call-history/uuid/abc123-def456", "host": ["{{base_url}}"], "path": ["api", "call-history", "uuid", "abc123-def456"]},
-						"description": "Get call history record by FreeSWITCH UUID. **Requires authentication.**"
-					}
-				},
-				{
-					"name": "Get Call History By User ID (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/call-history/user/1", "host": ["{{base_url}}"], "path": ["api", "call-history", "user", "1"]},
-						"description": "Get all call history records for a specific user ID. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Get Call History By A-Party (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/call-history/aparty/testuser", "host": ["{{base_url}}"], "path": ["api", "call-history", "aparty", "testuser"]},
-						"description": "Get all call history records for a specific calling party (username). **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Get Call History By Date Range (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/api/call-history/date-range?start=2025-12-01T00:00:00&end=2025-12-31T23:59:59",
-							"host": ["{{base_url}}"],
-							"path": ["api", "call-history", "date-range"],
-							"query": [
-								{"key": "start", "value": "2025-12-01T00:00:00", "description": "Start date-time in ISO format"},
-								{"key": "end", "value": "2025-12-31T23:59:59", "description": "End date-time in ISO format"}
-							]
-						},
-						"description": "Get call history records within a specific date range. **Requires ROLE_ADMIN.**\n\n**Query Parameters:**\n- start: Start date-time (ISO 8601 format)\n- end: End date-time (ISO 8601 format)"
-					}
-				},
-				{
-					"name": "Get Call History By Status (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/call-history/status/COMPLETED", "host": ["{{base_url}}"], "path": ["api", "call-history", "status", "COMPLETED"]},
-						"description": "Get call history records by status. **Requires ROLE_ADMIN.**\n\n**Valid Status Values:**\n- RESERVED\n- ANSWERED\n- COMPLETED\n- REJECTED\n- FAILED"
-					}
-				},
-				{
-					"name": "Delete Call History (Admin)",
-					"request": {
-						"method": "DELETE",
-						"url": {"raw": "{{base_url}}/api/call-history/1", "host": ["{{base_url}}"], "path": ["api", "call-history", "1"]},
-						"description": "Delete a call history record by ID. **Requires ROLE_ADMIN.**"
-					}
-				}
-			]
-		},
-		{
-			"name": "Top-Up Management",
-			"description": "Top-up request management with admin approval workflow. Users can request top-ups with minimum 20 BDT. Rate: 60 seconds for 3 BDT.",
-			"item": [
-				{
-					"name": "Create Top-Up Request",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"amount\": 100.00,\n  \"transactionMethod\": \"bKash\",\n  \"tnxId\": \"TXN123456789\"\n}",
-							"options": {"raw": {"language": "json"}}
-						},
-						"url": {"raw": "{{base_url}}/api/topup", "host": ["{{base_url}}"], "path": ["api", "topup"]},
-						"description": "Create a new top-up request. **Requires authentication.** Minimum amount is 20 BDT. Status starts as PENDING.\n\n**Request Body:**\n- amount (required, minimum 20.0): Top-up amount in BDT\n- transactionMethod (required): Payment method (e.g., bKash, Nagad, Rocket)\n- tnxId (required, unique): Transaction ID from payment\n\n**Rate:** 60 seconds per 3 BDT\n\n**Success Response (201):**\n```json\n{\n  \"success\": true,\n  \"message\": \"Top-up request created successfully. Waiting for admin approval.\",\n  \"data\": {\n    \"id\": 1,\n    \"idUser\": 2,\n    \"transactionMethod\": \"bKash\",\n    \"amount\": 100.00,\n    \"tnxId\": \"TXN123456789\",\n    \"date\": \"2025-12-21T10:00:00\",\n    \"status\": \"PENDING\",\n    \"updatedAt\": \"2025-12-21T10:00:00\",\n    \"durationInSeconds\": 2000,\n    \"user\": {...}\n  }\n}\n```"
-					}
-				},
-				{
-					"name": "Get My Top-Up Requests",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/topup/my", "host": ["{{base_url}}"], "path": ["api", "topup", "my"]},
-						"description": "Get all top-up requests for the authenticated user. **Requires authentication.**"
-					}
-				},
-				{
-					"name": "Get All Top-Up Requests (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/topup", "host": ["{{base_url}}"], "path": ["api", "topup"]},
-						"description": "Get all top-up requests. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Get Pending Top-Up Requests (Admin)",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/topup/pending", "host": ["{{base_url}}"], "path": ["api", "topup", "pending"]},
-						"description": "Get all pending top-up requests awaiting admin approval. **Requires ROLE_ADMIN.**"
-					}
-				},
-				{
-					"name": "Get Top-Up Request by ID",
-					"request": {
-						"method": "GET",
-						"url": {"raw": "{{base_url}}/api/topup/1", "host": ["{{base_url}}"], "path": ["api", "topup", "1"]},
-						"description": "Get a specific top-up request by ID. **Requires authentication.**"
-					}
-				},
-				{
-					"name": "Approve Top-Up Request (Admin)",
-					"request": {
-						"method": "PATCH",
-						"url": {"raw": "{{base_url}}/api/topup/1/approve", "host": ["{{base_url}}"], "path": ["api", "topup", "1", "approve"]},
-						"description": "Approve a pending top-up request. **Requires ROLE_ADMIN.**\n\nThis will:\n1. Update transaction status to SUCCESS\n2. Calculate duration based on amount (60 sec per 3 BDT)\n3. Add duration to user's balance\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"message\": \"Top-up request approved successfully. Balance added to user.\",\n  \"data\": {\n    \"id\": 1,\n    \"status\": \"SUCCESS\",\n    \"durationInSeconds\": 2000,\n    ...\n  }\n}\n```"
-					}
-				},
-				{
-					"name": "Reject Top-Up Request (Admin)",
-					"request": {
-						"method": "PATCH",
-						"url": {"raw": "{{base_url}}/api/topup/1/reject", "host": ["{{base_url}}"], "path": ["api", "topup", "1", "reject"]},
-						"description": "Reject a pending top-up request. **Requires ROLE_ADMIN.**\n\nThis will update the transaction status to FAILED without adding balance."
-					}
-				},
-				{
-					"name": "Delete Top-Up Request (Admin)",
-					"request": {
-						"method": "DELETE",
-						"url": {"raw": "{{base_url}}/api/topup/1", "host": ["{{base_url}}"], "path": ["api", "topup", "1"]},
-						"description": "Delete a top-up request by ID. **Requires ROLE_ADMIN.**"
-					}
-				}
-			]
-		}
-	],
-	"variable": [
-		{"key": "base_url", "value": "http://localhost:8080", "type": "string"},
-		{"key": "jwt_token", "value": "", "type": "string"}
-	]
+  "info": {
+    "_postman_id": "magic-call-complete-2025",
+    "name": "Magic Call API - Complete Collection",
+    "description": "Complete API with Authentication, User Management, User Details CRUD, Voice Processing, Call History Management, Voice Purchase System, Top-Up System, Voice User Mapping, Voice Expiry Cleanup, and Admin Setup\n\n## Total Endpoints: 73\n- Authentication: 2 endpoints\n- Admin Setup: 2 endpoints\n- User Management: 9 endpoints\n- User Details: 9 endpoints (Set selected voice type)\n- Voice Processing: 4 endpoints\n- Voice Types: 6 endpoints\n- Balance: 2 endpoints\n- Call History: 9 endpoints\n- Voice Purchase: 11 endpoints (Trial system, admin approval workflow, separate payment tracking)\n- Top-Up: 8 endpoints (User top-up with admin approval)\n- Voice User Mapping: 11 endpoints (HashMap service, default voice selection)\n- Voice Expiry Cleanup: 5 endpoints (NEW - Automatic cleanup, history tracking, statistics)\n\n## Features:\n- JWT-based authentication with BCrypt password encryption\n- Admin setup utility for creating/updating admin users\n- Role-based access control (ROLE_USER, ROLE_ADMIN)\n- Complete user CRUD operations (profile, admin management)\n- User details management (extended profile information, default voice selection)\n- Voice transformation (Male to Female, Female to Male, Robot, Child)\n- User balance management (duration in seconds)\n- Voice type purchase system with 3-day trial and admin approval\n- Call history and CDR management with FreeSWITCH integration\n- Top-up system with manual admin approval (60 sec per 3 BDT, minimum 20 BDT)\n- Automatic FreeSWITCH user provisioning with XML config\n- Transaction rollback on FreeSWITCH config failure\n- Enable/Disable user functionality\n- Voice User Mapping HashMap service with caching and auto-refresh\n- Default voice selection for automatic call processing\n- Voice access control and statistics\n- Automatic voice expiry cleanup with scheduled tasks (runs at midnight daily and on startup)\n- Voice mapping history tracking with expiry reasons (trial/subscription/both)\n- Cleanup statistics and preview functionality\n\n## Error Codes:\n- USERNAME_EXISTS (409): Username already taken\n- INVALID_CREDENTIALS (401): Invalid username or password\n- INVALID_REQUEST (400): Missing or invalid request data\n- FREESWITCH_CONFIG_FAILED (500): FreeSWITCH configuration creation failed\n- AUDIO_PROCESSING_FAILED (500): Audio processing error\n\n## Voice Type System:\n- Voice Type 1 (Male Voice - 901): Purchasable with admin approval\n- Voice Type 2 (Female Voice - 902): Purchasable with admin approval\n- Voice Type 3 (Child Voice - 903): 3-day trial on signup, then purchasable with admin approval\n- Voice Type 4 (Robot Voice - 904): Free forever on signup\n\n## Security Notes:\n- User registration automatically creates FreeSWITCH configuration\n- If FreeSWITCH config fails, user is NOT created (transaction rollback)\n- New users automatically get voice type 3 (3-day trial) and voice type 4 (permanent)\n- Voice purchase requests require admin approval before granting access\n- Users can select their default voice type from available voices\n- Default voice is automatically applied during calls if set, otherwise uses first available\n- Voice User Mapping HashMap is cached and auto-refreshes every hour\n- All endpoints except auth, setup, and voice processing require JWT token\n- Admin endpoints require ROLE_ADMIN authority\n- Users can only update their own profile (cannot change roles)\n- Admins can manage all users and change roles\n- Deleting a user also deletes associated FreeSWITCH configuration\n- Top-up requests start as PENDING and require admin approval\n- Upon approval, balance is automatically added to user account\n- Admin Setup endpoints are public (no authentication required) for initial setup",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "User registration and login endpoints. No authentication required.",
+      "item": [
+        {
+          "name": "Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) { var jsonData = pm.response.json(); pm.environment.set('jwt_token', jsonData.token); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"Pass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "Register a new user with ROLE_USER. Automatically creates FreeSWITCH configuration.\n\n**Success Response (201):**\n```json\n{\n  \"token\": \"eyJhbGci...\",\n  \"username\": \"testuser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"roles\": [\"ROLE_USER\"],\n  \"createdAt\": \"2025-12-20T21:26:46.435740605\",\n  \"message\": \"User registered successfully\"\n}\n```\n\n**Error Response (409 - Username Exists):**\n```json\n{\n  \"statusCode\": 409,\n  \"error\": \"USERNAME_EXISTS\",\n  \"message\": \"Username 'testuser' is already taken\",\n  \"path\": \"/api/auth/signup\",\n  \"timestamp\": \"2025-12-20T21:26:46\"\n}\n```\n\n**Error Response (500 - FreeSWITCH Config Failed):**\n```json\n{\n  \"statusCode\": 500,\n  \"error\": \"FREESWITCH_CONFIG_FAILED\",\n  \"message\": \"Failed to create FreeSWITCH config directory. Please ensure the directory exists and has proper permissions: /usr/local/freeswitch/conf/directory/default\",\n  \"path\": \"/api/auth/signup\",\n  \"timestamp\": \"2025-12-20T21:26:46\"\n}\n```"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) { var jsonData = pm.response.json(); pm.environment.set('jwt_token', jsonData.token); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login with username and password to get JWT token.\n\n**Default Admin Credentials:**\n- Username: admin\n- Password: admin123\n\n**Test User Credentials:**\n- Username: testuser\n- Password: password123\n\n**Success Response (200):**\n```json\n{\n  \"token\": \"eyJhbGci...\",\n  \"username\": \"admin\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"User\",\n  \"roles\": [\"ROLE_ADMIN\", \"ROLE_USER\"],\n  \"createdAt\": \"2025-12-20T21:26:46.435740605\",\n  \"message\": \"Login successful\"\n}\n```\n\n**Error Response (401):**\n```json\n{\n  \"statusCode\": 401,\n  \"error\": \"INVALID_CREDENTIALS\",\n  \"message\": \"Invalid username or password\",\n  \"path\": \"/api/auth/login\",\n  \"timestamp\": \"2025-12-20T21:26:46\"\n}\n```\n\n**Note:** If you get INVALID_CREDENTIALS error, use the Admin Setup endpoints to create/reset admin user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Setup",
+      "description": "Admin user setup utilities. These endpoints are public (no authentication required) to help with initial admin user creation or password reset.",
+      "item": [
+        {
+          "name": "Test Admin User",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/setup/test-admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "setup",
+                "test-admin"
+              ]
+            },
+            "description": "Check if admin user exists and view details.\n\n**Success Response (200):**\n```json\n{\n  \"exists\": true,\n  \"username\": \"admin\",\n  \"enabled\": true,\n  \"roles\": [\"ROLE_ADMIN\", \"ROLE_USER\"],\n  \"passwordHash\": \"$2a$10$...\"\n}\n```\n\n**If Admin Not Found:**\n```json\n{\n  \"exists\": false,\n  \"message\": \"Admin user not found. Use POST /api/setup/create-admin to create it.\"\n}\n```"
+          }
+        },
+        {
+          "name": "Create or Update Admin User",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"User\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/setup/create-admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "setup",
+                "create-admin"
+              ]
+            },
+            "description": "Create a new admin user or update existing admin user with new password.\n\n**Request Body:**\n- username (optional, default: \"admin\")\n- password (optional, default: \"admin123\")\n- firstName (optional, default: \"Admin\")\n- lastName (optional, default: \"User\")\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"message\": \"Admin user created/updated successfully\",\n  \"username\": \"admin\",\n  \"password\": \"admin123\",\n  \"roles\": [\"ROLE_ADMIN\", \"ROLE_USER\"],\n  \"passwordHash\": \"$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7q5kQjL86\"\n}\n```\n\n**Important Notes:**\n- This endpoint is public (no JWT token required)\n- Use this to fix login issues or reset admin password\n- The password will be automatically encrypted with BCrypt\n- If admin user exists, it will be updated with new details\n- If admin user doesn't exist, it will be created with ROLE_ADMIN and ROLE_USER\n- After creating admin, use the /api/auth/login endpoint to get JWT token"
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "description": "CRUD operations for users. Authenticated users can manage their own profile. Admins can manage all users.",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            },
+            "description": "Get profile for the authenticated user.\n\n**Success Response (200):**\n```json\n{\n  \"id\": 1,\n  \"username\": \"testuser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"enabled\": true,\n  \"roles\": [\"ROLE_USER\"],\n  \"createdAt\": \"2025-12-20T21:26:46.435740605\",\n  \"updatedAt\": \"2025-12-20T21:26:46.435740605\"\n}\n```"
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith\",\n  \"enabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            },
+            "description": "Update profile for the authenticated user.\n\n**Note:** Users cannot change their own roles."
+          }
+        },
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": "Get all users. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Get User By ID (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "1"
+              ]
+            },
+            "description": "Get user by ID. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Get User By Username (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/users/username/testuser",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "username",
+                "testuser"
+              ]
+            },
+            "description": "Get user by username. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Update User By ID (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"enabled\": true,\n  \"roles\": [\"ROLE_USER\", \"ROLE_ADMIN\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "1"
+              ]
+            },
+            "description": "Update user by ID. **Requires ROLE_ADMIN.**\n\n**Note:** Admin can change user roles."
+          }
+        },
+        {
+          "name": "Delete User By ID (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "1"
+              ]
+            },
+            "description": "Delete user by ID. Also deletes associated FreeSWITCH configuration. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Enable User (Admin)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/api/users/1/enable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "1",
+                "enable"
+              ]
+            },
+            "description": "Enable user by ID. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Disable User (Admin)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/api/users/1/disable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "1",
+                "disable"
+              ]
+            },
+            "description": "Disable user by ID. **Requires ROLE_ADMIN.**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Details Management",
+      "description": "CRUD operations for user details, including selecting default voice type. Requires JWT authentication.",
+      "item": [
+        {
+          "name": "Create My User Details",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dateOfBirth\": \"1990-01-15\",\n  \"gender\": \"Male\",\n  \"address\": \"123 Main St, City, Country\",\n  \"email\": \"user@example.com\",\n  \"profilePhoto\": \"/images/profile.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user-details/my",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user-details",
+                "my"
+              ]
+            },
+            "description": "Create user details for the authenticated user."
+          }
+        },
+        {
+          "name": "Get My User Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/user-details/my",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user-details",
+                "my"
+              ]
+            },
+            "description": "Get user details for the authenticated user."
+          }
+        },
+        {
+          "name": "Update My User Details",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dateOfBirth\": \"1990-01-15\",\n  \"gender\": \"Male\",\n  \"address\": \"456 New St, City, Country\",\n  \"email\": \"newemail@example.com\",\n  \"profilePhoto\": \"/images/newprofile.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user-details/my",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user-details",
+                "my"
+              ]
+            },
+            "description": "Update user details for the authenticated user."
+          }
+        },
+        {
+          "name": "Delete My User Details",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/user-details/my",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user-details",
+                "my"
+              ]
+            },
+            "description": "Delete user details for the authenticated user."
+          }
+        },
+        {
+          "name": "Set Selected Voice Type",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/user-details/my/selected-voice/3",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user-details",
+                "my",
+                "selected-voice",
+                "3"
+              ]
+            },
+            "description": "Set the default voice type for the authenticated user. The user must have active access to the voice type. **Requires authentication.**\n\nPath Parameter:\n- voiceTypeId: ID of the voice type to set as default (must be an active voice type for the user)"
+          }
+        },
+        {
+          "name": "Get All User Details (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/user-details/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user-details",
+                "all"
+              ]
+            },
+            "description": "Get all user details. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Get User Details By ID (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/user-details/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user-details",
+                "1"
+              ]
+            },
+            "description": "Get user details by ID. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Update User Details By ID (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dateOfBirth\": \"1985-05-20\",\n  \"gender\": \"Female\",\n  \"address\": \"Updated Address\",\n  \"email\": \"admin@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user-details/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user-details",
+                "1"
+              ]
+            },
+            "description": "Update user details by ID. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Delete User Details By ID (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/user-details/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user-details",
+                "1"
+              ]
+            },
+            "description": "Delete user details by ID. **Requires ROLE_ADMIN.**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voice Processing",
+      "description": "Voice transformation endpoints. No authentication required.",
+      "item": [
+        {
+          "name": "Voice Test - Male to Female (901)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Audio file to process"
+                },
+                {
+                  "key": "code",
+                  "value": "901",
+                  "type": "text",
+                  "description": "Transformation code: 901 = Male to Female"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/voiceTest?code=901",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voiceTest"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "901"
+                }
+              ]
+            },
+            "description": "Transform voice from Male to Female using preset parameters.\n\n**Code 901 Parameters:**\n- Shift: 5.0\n- Formant: 1.4\n- Base: 100.0"
+          }
+        },
+        {
+          "name": "Voice Test - Female to Male (902)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Audio file to process"
+                },
+                {
+                  "key": "code",
+                  "value": "902",
+                  "type": "text",
+                  "description": "Transformation code: 902 = Female to Male"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/voiceTest?code=902",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voiceTest"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "902"
+                }
+              ]
+            },
+            "description": "Transform voice from Female to Male using preset parameters.\n\n**Code 902 Parameters:**\n- Shift: -5.0\n- Formant: 0.8\n- Base: 100.0"
+          }
+        },
+        {
+          "name": "Voice Test - Robot Voice (903)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Audio file to process"
+                },
+                {
+                  "key": "code",
+                  "value": "903",
+                  "type": "text",
+                  "description": "Transformation code: 903 = Robot Voice"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/voiceTest?code=903",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voiceTest"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "903"
+                }
+              ]
+            },
+            "description": "Transform voice to Robot Voice using preset parameters.\n\n**Code 903 Parameters:**\n- Shift: 0.0\n- Formant: 1.0\n- Base: 80.0"
+          }
+        },
+        {
+          "name": "Process Audio - Custom Parameters",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Audio file to process"
+                },
+                {
+                  "key": "shift",
+                  "value": "10.0",
+                  "type": "text",
+                  "description": "Pitch shift value"
+                },
+                {
+                  "key": "formant",
+                  "value": "2.0",
+                  "type": "text",
+                  "description": "Formant value"
+                },
+                {
+                  "key": "base",
+                  "value": "100.0",
+                  "type": "text",
+                  "description": "Base frequency"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/process?shift=10.0&formant=2.0&base=100.0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "process"
+              ],
+              "query": [
+                {
+                  "key": "shift",
+                  "value": "10.0"
+                },
+                {
+                  "key": "formant",
+                  "value": "2.0"
+                },
+                {
+                  "key": "base",
+                  "value": "100.0"
+                }
+              ]
+            },
+            "description": "Process audio with custom transformation parameters.\n\n**Parameters:**\n- **shift**: Pitch shift amount (positive = higher, negative = lower)\n- **formant**: Formant preservation factor (affects vocal characteristics)\n- **base**: Base frequency for processing"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voice Types",
+      "description": "Manage voice transformation types. All users can view, only admins can create/update/delete.",
+      "item": [
+        {
+          "name": "Get All Voice Types",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-types",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-types"
+              ]
+            },
+            "description": "Get all available voice types."
+          }
+        },
+        {
+          "name": "Get Voice Type By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-types/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-types",
+                "1"
+              ]
+            },
+            "description": "Get voice type by ID."
+          }
+        },
+        {
+          "name": "Get Voice Type By Code",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-types/code/901",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-types",
+                "code",
+                "901"
+              ]
+            },
+            "description": "Get voice type by code (e.g., 901, 902, 903)."
+          }
+        },
+        {
+          "name": "Create Voice Type (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"voiceName\": \"Deep Voice\",\n  \"code\": \"904\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/voice-types",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-types"
+              ]
+            },
+            "description": "Create a new voice type. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Update Voice Type (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"voiceName\": \"Updated Voice Name\",\n  \"code\": \"904\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/voice-types/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-types",
+                "1"
+              ]
+            },
+            "description": "Update voice type by ID. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Delete Voice Type (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/voice-types/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-types",
+                "1"
+              ]
+            },
+            "description": "Delete voice type by ID. **Requires ROLE_ADMIN.**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Balance",
+      "description": "User balance management. Balance is tracked in duration (seconds). Users can view their own balance, admins can view any user's balance.",
+      "item": [
+        {
+          "name": "Get My Balance",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/balance/my",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "balance",
+                "my"
+              ]
+            },
+            "description": "Get balance for the authenticated user. Returns duration in seconds with formatted string."
+          }
+        },
+        {
+          "name": "Get User Balance (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/balance/user/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "balance",
+                "user",
+                "1"
+              ]
+            },
+            "description": "Get balance for any user by ID. **Requires ROLE_ADMIN.**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voice Purchase",
+      "description": "Voice type purchase system with 3-day trial and admin approval workflow.\n\n**Auto-Assignment on Registration:**\n- Voice Type 3 (Child Voice): 3-day trial\n- Voice Type 4 (Robot Voice): Free forever\n\n**Purchase Workflow:**\n1. User requests to purchase a voice type (status: pending)\n2. Admin reviews and approves/rejects the request\n3. Upon approval, user gets permanent access to the voice type\n\n**Purchasable Voice Types:**\n- Voice Type 1 (Male Voice)\n- Voice Type 2 (Female Voice)\n- Voice Type 3 (Child Voice) - after trial expires",
+      "item": [
+        {
+          "name": "Purchase Voice Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idVoiceType\": 1,\n  \"transactionMethod\": \"bkash\",\n  \"tnxId\": \"TXN123456789\",\n  \"subscriptionType\": \"monthly\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase"
+              ]
+            },
+            "description": "Request to purchase a voice type with payment details and subscription period. **Requires authentication.** Default price: 50 BDT per voice type.\n\n**Important:** This creates a PENDING purchase request. Admin approval is required to grant access. Payment info is stored directly in the voice_purchases table.\n\n**Request body:**\n- idVoiceType: ID of the voice type to purchase (1, 2, or 3)\n- transactionMethod: Payment method (\"bkash\", \"nagad\", or \"rocket\")\n- tnxId: Transaction ID from mobile banking\n- subscriptionType: Subscription period (\"monthly\" or \"yearly\")\n\n**Expiry Calculation:**\n- Monthly subscription: Access expires after 1 month from purchase date\n- Yearly subscription: Access expires after 1 year from purchase date\n\n**Response:**\n- Status will be \"pending\" until admin approves\n- Payment info and subscription type stored in voice_purchases record\n- expiryDate calculated automatically based on subscriptionType\n- On approval, user gets access to the voice type until expiry date"
+          }
+        },
+        {
+          "name": "Get My Purchases",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase/my",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase",
+                "my"
+              ]
+            },
+            "description": "Get all voice type purchases for the authenticated user. **Requires authentication.**"
+          }
+        },
+        {
+          "name": "Get All Purchases (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase"
+              ]
+            },
+            "description": "Get all voice type purchases. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Get Purchases by Voice Type (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase/voice-type/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase",
+                "voice-type",
+                "1"
+              ]
+            },
+            "description": "Get all purchases for a specific voice type. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Get My Voice Types",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase/my-voice-types",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase",
+                "my-voice-types"
+              ]
+            },
+            "description": "Get all voice types available to the authenticated user (both free and purchased). **Requires authentication.**"
+          }
+        },
+        {
+          "name": "Get Available Voice Types",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase/available",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase",
+                "available"
+              ]
+            },
+            "description": "Get voice types available for purchase. **Only returns voice types the user does NOT already have.** **Requires authentication.**\n\nThis endpoint filters out:\n- Voice types the user already purchased\n- Voice types auto-assigned (3 and 4)\n- Voice types with active trial access\n\nPerfect for showing a \"Buy Voice Types\" list in the UI."
+          }
+        },
+        {
+          "name": "Get My Active Voice Types",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase/my-active-voice-types",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase",
+                "my-active-voice-types"
+              ]
+            },
+            "description": "Get only active (non-expired) voice types for the authenticated user. Excludes expired trial voices. **Requires authentication.**"
+          }
+        },
+        {
+          "name": "Get Pending Purchases (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase/pending",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase",
+                "pending"
+              ]
+            },
+            "description": "Get all pending voice purchase requests awaiting admin approval. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Approve Purchase (Admin)",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase/1/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase",
+                "1",
+                "approve"
+              ]
+            },
+            "description": "Approve a pending voice purchase request and grant the user access to the voice type. **Requires ROLE_ADMIN.**\n\nUpdates purchase status from 'pending' to 'approved' and creates/updates voice-user mapping."
+          }
+        },
+        {
+          "name": "Reject Purchase (Admin)",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase/1/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase",
+                "1",
+                "reject"
+              ]
+            },
+            "description": "Reject a pending voice purchase request. User will NOT get access to the voice type. **Requires ROLE_ADMIN.**\n\nUpdates purchase status from 'pending' to 'rejected'."
+          }
+        },
+        {
+          "name": "Delete Purchase (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/voice-purchase/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-purchase",
+                "1"
+              ]
+            },
+            "description": "Delete a voice purchase by ID. This also removes the voice-user mapping. **Requires ROLE_ADMIN.**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Call History",
+      "description": "Call history and CDR (Call Detail Record) management. All endpoints require JWT authentication. Users can view their own call history, admins can view all records.",
+      "item": [
+        {
+          "name": "Get My Call History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/call-history/my",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "call-history",
+                "my"
+              ]
+            },
+            "description": "Get call history for the authenticated user. **Requires authentication.**\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"message\": \"Call history retrieved successfully\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"aparty\": \"testuser\",\n      \"bparty\": \"1234567890\",\n      \"uuid\": \"abc123-def456-ghi789\",\n      \"sourceIp\": \"192.168.1.100\",\n      \"createTime\": \"2025-12-21T10:00:00\",\n      \"startTime\": \"2025-12-21T10:00:05\",\n      \"endTime\": \"2025-12-21T10:05:30\",\n      \"duration\": 325,\n      \"status\": \"COMPLETED\",\n      \"hangupCause\": \"NORMAL_CLEARING\",\n      \"codec\": \"PCMU\",\n      \"idUser\": 1,\n      \"user\": {...}\n    }\n  ]\n}\n```"
+          }
+        },
+        {
+          "name": "Get All Call History (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/call-history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "call-history"
+              ]
+            },
+            "description": "Get all call history records. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Get Call History By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/call-history/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "call-history",
+                "1"
+              ]
+            },
+            "description": "Get call history record by ID. **Requires authentication.**"
+          }
+        },
+        {
+          "name": "Get Call History By UUID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/call-history/uuid/abc123-def456",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "call-history",
+                "uuid",
+                "abc123-def456"
+              ]
+            },
+            "description": "Get call history record by FreeSWITCH UUID. **Requires authentication.**"
+          }
+        },
+        {
+          "name": "Get Call History By User ID (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/call-history/user/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "call-history",
+                "user",
+                "1"
+              ]
+            },
+            "description": "Get all call history records for a specific user ID. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Get Call History By A-Party (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/call-history/aparty/testuser",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "call-history",
+                "aparty",
+                "testuser"
+              ]
+            },
+            "description": "Get all call history records for a specific calling party (username). **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Get Call History By Date Range (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/call-history/date-range?start=2025-12-01T00:00:00&end=2025-12-31T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "call-history",
+                "date-range"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2025-12-01T00:00:00",
+                  "description": "Start date-time in ISO format"
+                },
+                {
+                  "key": "end",
+                  "value": "2025-12-31T23:59:59",
+                  "description": "End date-time in ISO format"
+                }
+              ]
+            },
+            "description": "Get call history records within a specific date range. **Requires ROLE_ADMIN.**\n\n**Query Parameters:**\n- start: Start date-time (ISO 8601 format)\n- end: End date-time (ISO 8601 format)"
+          }
+        },
+        {
+          "name": "Get Call History By Status (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/call-history/status/COMPLETED",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "call-history",
+                "status",
+                "COMPLETED"
+              ]
+            },
+            "description": "Get call history records by status. **Requires ROLE_ADMIN.**\n\n**Valid Status Values:**\n- RESERVED\n- ANSWERED\n- COMPLETED\n- REJECTED\n- FAILED"
+          }
+        },
+        {
+          "name": "Delete Call History (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/call-history/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "call-history",
+                "1"
+              ]
+            },
+            "description": "Delete a call history record by ID. **Requires ROLE_ADMIN.**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Top-Up Management",
+      "description": "Top-up request management with admin approval workflow. Users can request top-ups with minimum 20 BDT. Rate: 60 seconds for 3 BDT.",
+      "item": [
+        {
+          "name": "Create Top-Up Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100.00,\n  \"transactionMethod\": \"bKash\",\n  \"tnxId\": \"TXN123456789\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/topup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "topup"
+              ]
+            },
+            "description": "Create a new top-up request. **Requires authentication.** Minimum amount is 20 BDT. Status starts as PENDING.\n\n**Request Body:**\n- amount (required, minimum 20.0): Top-up amount in BDT\n- transactionMethod (required): Payment method (e.g., bKash, Nagad, Rocket)\n- tnxId (required, unique): Transaction ID from payment\n\n**Rate:** 60 seconds per 3 BDT\n\n**Success Response (201):**\n```json\n{\n  \"success\": true,\n  \"message\": \"Top-up request created successfully. Waiting for admin approval.\",\n  \"data\": {\n    \"id\": 1,\n    \"idUser\": 2,\n    \"transactionMethod\": \"bKash\",\n    \"amount\": 100.00,\n    \"tnxId\": \"TXN123456789\",\n    \"date\": \"2025-12-21T10:00:00\",\n    \"status\": \"PENDING\",\n    \"updatedAt\": \"2025-12-21T10:00:00\",\n    \"durationInSeconds\": 2000,\n    \"user\": {...}\n  }\n}\n```"
+          }
+        },
+        {
+          "name": "Get My Top-Up Requests",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/topup/my",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "topup",
+                "my"
+              ]
+            },
+            "description": "Get all top-up requests for the authenticated user. **Requires authentication.**"
+          }
+        },
+        {
+          "name": "Get All Top-Up Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/topup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "topup"
+              ]
+            },
+            "description": "Get all top-up requests. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Get Pending Top-Up Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/topup/pending",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "topup",
+                "pending"
+              ]
+            },
+            "description": "Get all pending top-up requests awaiting admin approval. **Requires ROLE_ADMIN.**"
+          }
+        },
+        {
+          "name": "Get Top-Up Request by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/topup/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "topup",
+                "1"
+              ]
+            },
+            "description": "Get a specific top-up request by ID. **Requires authentication.**"
+          }
+        },
+        {
+          "name": "Approve Top-Up Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/api/topup/1/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "topup",
+                "1",
+                "approve"
+              ]
+            },
+            "description": "Approve a pending top-up request. **Requires ROLE_ADMIN.**\n\nThis will:\n1. Update transaction status to SUCCESS\n2. Calculate duration based on amount (60 sec per 3 BDT)\n3. Add duration to user's balance\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"message\": \"Top-up request approved successfully. Balance added to user.\",\n  \"data\": {\n    \"id\": 1,\n    \"status\": \"SUCCESS\",\n    \"durationInSeconds\": 2000,\n    ...\n  }\n}\n```"
+          }
+        },
+        {
+          "name": "Reject Top-Up Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/api/topup/1/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "topup",
+                "1",
+                "reject"
+              ]
+            },
+            "description": "Reject a pending top-up request. **Requires ROLE_ADMIN.**\n\nThis will update the transaction status to FAILED without adding balance."
+          }
+        },
+        {
+          "name": "Delete Top-Up Request (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/topup/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "topup",
+                "1"
+              ]
+            },
+            "description": "Delete a top-up request by ID. **Requires ROLE_ADMIN.**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voice User Mapping",
+      "description": "Voice user mapping and default voice selection endpoints. Manage HashMap of username to voice codes and set default voices for automatic call processing.",
+      "item": [
+        {
+          "name": "Get User Voice Codes HashMap",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/map",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "map"
+              ]
+            },
+            "description": "Get the complete HashMap of all users and their accessible voice codes. **Requires authentication.**\n\n**Response:**\n```json\n{\n  \"01789896378\": [\"901\", \"902\", \"904\"],\n  \"01712345678\": [\"903\", \"904\"]\n}\n```"
+          }
+        },
+        {
+          "name": "Get Voice Codes for User",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/user/01789896378/codes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "user",
+                "01789896378",
+                "codes"
+              ]
+            },
+            "description": "Get list of voice codes a specific user has access to. **Requires authentication.**\n\n**Response:**\n```json\n{\n  \"username\": \"01789896378\",\n  \"voiceCodes\": [\"901\", \"902\", \"904\"],\n  \"count\": 3\n}\n```"
+          }
+        },
+        {
+          "name": "Get Users for Voice Code",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/voice-code/902/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "voice-code",
+                "902",
+                "users"
+              ]
+            },
+            "description": "Get all usernames that have access to a specific voice code. **Requires authentication.**\n\n**Response:**\n```json\n{\n  \"voiceCode\": \"902\",\n  \"usernames\": [\"01789896378\", \"01712345678\"],\n  \"count\": 2\n}\n```"
+          }
+        },
+        {
+          "name": "Check User Access to Voice Code",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/check-access?username=01789896378&voiceCode=902",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "check-access"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "01789896378"
+                },
+                {
+                  "key": "voiceCode",
+                  "value": "902"
+                }
+              ]
+            },
+            "description": "Check if a user has access to a specific voice code. **Requires authentication.**\n\n**Response:**\n```json\n{\n  \"username\": \"01789896378\",\n  \"voiceCode\": \"902\",\n  \"hasAccess\": true\n}\n```"
+          }
+        },
+        {
+          "name": "Get Voice Access Statistics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/statistics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "statistics"
+              ]
+            },
+            "description": "Get statistics about voice access across all users. **Requires authentication.**\n\n**Response:**\n```json\n{\n  \"totalUsersWithVoiceAccess\": 10,\n  \"totalActiveVoiceMappings\": 25,\n  \"voiceCodeUsage\": {\n    \"901\": 5,\n    \"902\": 8,\n    \"903\": 4,\n    \"904\": 8\n  },\n  \"userWithMostAccess\": \"01789896378\",\n  \"maxVoiceAccessCount\": 4\n}\n```"
+          }
+        },
+        {
+          "name": "Get User Detailed Mappings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/user/01789896378/details",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "user",
+                "01789896378",
+                "details"
+              ]
+            },
+            "description": "Get detailed voice mapping information for a user including expiry dates and purchase status. **Requires authentication.**"
+          }
+        },
+        {
+          "name": "Clear Voice Mapping Cache",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/cache/clear",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "cache",
+                "clear"
+              ]
+            },
+            "description": "Clear the voice mapping cache to force a refresh. **Requires authentication.**\n\n**Response:**\n```json\n{\n  \"message\": \"Cache cleared successfully\",\n  \"status\": \"success\"\n}\n```"
+          }
+        },
+        {
+          "name": "Print HashMap to Console (Debug)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/debug/print",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "debug",
+                "print"
+              ]
+            },
+            "description": "Print the HashMap to server console logs for debugging. **Requires authentication.**\n\n**Response:**\n```json\n{\n  \"message\": \"HashMap printed to console logs\",\n  \"status\": \"success\"\n}\n```"
+          }
+        },
+        {
+          "name": "Get My Default Voice",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/default-voice",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "default-voice"
+              ]
+            },
+            "description": "Get the current default voice setting for authenticated user (from JWT token). **Requires authentication.**\n\n**Response (with default set):**\n```json\n{\n  \"username\": \"01789896378\",\n  \"defaultVoiceCode\": \"902\",\n  \"hasDefault\": true,\n  \"voiceName\": \"Female Voice\",\n  \"mappingId\": 3\n}\n```\n\n**Response (no default):**\n```json\n{\n  \"username\": \"01789896378\",\n  \"defaultVoiceCode\": null,\n  \"hasDefault\": false,\n  \"message\": \"No default voice set\"\n}\n```"
+          }
+        },
+        {
+          "name": "Set My Default Voice",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/default-voice?voiceCode=902",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "default-voice"
+              ],
+              "query": [
+                {
+                  "key": "voiceCode",
+                  "value": "902",
+                  "description": "Voice code to set as default (901, 902, 903, 904)"
+                }
+              ]
+            },
+            "description": "Set a voice as the default for authenticated user (from JWT token). The user must have active access to this voice. **Requires authentication.**\n\n**Voice Codes:**\n- 901: Male Voice\n- 902: Female Voice\n- 903: Child Voice\n- 904: Robot Voice (Free)\n\n**Note:** Only one voice can be default at a time. Setting a new default automatically removes the previous default.\n\n**Success Response:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"✅ Default voice set to code 902 (Female Voice)\"\n}\n```\n\n**Error Response (no access):**\n```json\n{\n  \"status\": \"error\",\n  \"message\": \"Error: User does not have access to voice code 902\"\n}\n```"
+          }
+        },
+        {
+          "name": "Clear My Default Voice",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/voice-user-mapping/default-voice",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-user-mapping",
+                "default-voice"
+              ]
+            },
+            "description": "Remove the default voice setting for authenticated user (from JWT token). The system will then use the first available voice code. **Requires authentication.**\n\n**Success Response:**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"✅ Default voice cleared for user 01789896378\"\n}\n```\n\n**Info Response (no default was set):**\n```json\n{\n  \"status\": \"info\",\n  \"message\": \"No default voice set for user 01789896378\"\n}\n```"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voice Expiry Cleanup",
+      "description": "Automatic cleanup of expired voice mappings. View history and statistics of expired trials and subscriptions.",
+      "item": [
+        {
+          "name": "Get All Expired History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-cleanup/history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-cleanup",
+                "history"
+              ]
+            },
+            "description": "Get all expired voice mapping history records with user and voice type details. **Requires authentication.**\n\n**Response:**\n```json\n[\n  {\n    \"id\": 1,\n    \"originalMappingId\": 5,\n    \"idUser\": 2,\n    \"idVoiceType\": 3,\n    \"isPurchased\": false,\n    \"assignedAt\": \"2025-12-17T10:00:00\",\n    \"trialExpiryDate\": \"2025-12-20T10:00:00\",\n    \"expiryDate\": null,\n    \"isDefault\": false,\n    \"expiredAt\": \"2025-12-22T02:00:01\",\n    \"expiryReason\": \"TRIAL_EXPIRED\",\n    \"user\": {\n      \"id\": 2,\n      \"username\": \"01789896378\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\"\n    },\n    \"voiceType\": {\n      \"id\": 3,\n      \"voiceName\": \"Child Voice\",\n      \"code\": \"903\"\n    }\n  }\n]\n```"
+          }
+        },
+        {
+          "name": "Get History for User",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-cleanup/history/user/2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-cleanup",
+                "history",
+                "user",
+                "2"
+              ]
+            },
+            "description": "Get expired voice mapping history for a specific user. **Requires authentication.**\n\n**Response:** Same as 'Get All Expired History' but filtered for the specified user."
+          }
+        },
+        {
+          "name": "Get Cleanup Statistics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-cleanup/statistics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-cleanup",
+                "statistics"
+              ]
+            },
+            "description": "Get statistics about cleanup operations. **Requires authentication.**\n\n**Response:**\n```json\n{\n  \"totalHistoryRecords\": 25,\n  \"countByExpiryReason\": {\n    \"TRIAL_EXPIRED\": 10,\n    \"SUBSCRIPTION_EXPIRED\": 12,\n    \"BOTH_EXPIRED\": 3\n  },\n  \"recentExpiredCount\": 5,\n  \"currentActiveMappings\": 48\n}\n```"
+          }
+        },
+        {
+          "name": "Preview Cleanup",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/voice-cleanup/preview",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-cleanup",
+                "preview"
+              ]
+            },
+            "description": "Preview what would be cleaned up without actually deleting (dry run). **Requires authentication.**\n\n**Response:**\n```json\n{\n  \"totalMappingsToCleanUp\": 2,\n  \"trialExpiredCount\": 1,\n  \"subscriptionExpiredCount\": 1,\n  \"bothExpiredCount\": 0,\n  \"mappingsToCleanUp\": [\n    {\n      \"id\": 5,\n      \"userId\": 2,\n      \"voiceTypeId\": 3,\n      \"isPurchased\": false,\n      \"trialExpiryDate\": \"2025-12-20T10:00:00\",\n      \"expiryDate\": null,\n      \"expiryReason\": \"TRIAL_EXPIRED\"\n    }\n  ],\n  \"previewTime\": \"2025-12-22T14:30:00\"\n}\n```"
+          }
+        },
+        {
+          "name": "Run Manual Cleanup",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/voice-cleanup/run",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "voice-cleanup",
+                "run"
+              ]
+            },
+            "description": "Manually trigger cleanup of expired voice mappings. This moves expired records to history table. **Requires authentication.**\n\n**Note:** Cleanup also runs automatically:\n- On application startup\n- Daily at midnight (12:00 AM)\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"processedCount\": 50,\n  \"movedToHistoryCount\": 2,\n  \"failedCount\": 0,\n  \"cleanupTime\": \"2025-12-22T14:30:00\",\n  \"errors\": []\n}\n```"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
 }

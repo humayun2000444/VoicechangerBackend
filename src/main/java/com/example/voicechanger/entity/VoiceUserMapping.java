@@ -38,6 +38,9 @@ public class VoiceUserMapping {
     @Column(name = "expiry_date")
     private LocalDateTime expiryDate; // null = permanent access, non-null = subscription expires at this date
 
+    @Column(name = "is_default", nullable = false)
+    private Boolean isDefault = false; // true = this is the user's default voice for calls
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_user", referencedColumnName = "id", insertable = false, updatable = false)
     private User user;
@@ -51,6 +54,9 @@ public class VoiceUserMapping {
         assignedAt = LocalDateTime.now();
         if (isPurchased == null) {
             isPurchased = false;
+        }
+        if (isDefault == null) {
+            isDefault = false;
         }
     }
 }
